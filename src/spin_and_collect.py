@@ -24,6 +24,21 @@ class spin_and_collect(object):
 		rospy.init_node('spin_and_collect',anonymous=True)
 		self.node_init_=True
 
+	def simple_collect(self,robot_namespace='',total_time=np.inf):
+		if not self.node_init_:
+			print("The spin_and_collect node is not initialized yet. Call self.init_node() first.")
+			return
+
+		r = rospy.Rate(self.awake_freq_)
+		# Initialize the light sensor reading listener.
+		self.collect_start_(robot_namespace)
+		counter=0
+		while (not rospy.is_shutdown()) and counter<total_time*self.awake_freq_:
+				counter+=1
+				# print(counter,total_time*self.awake_freq_)
+				r.sleep()
+
+
 	def spin_and_collect(self,robot_namespace='',total_time=0):# By default rotate for 0s.
 		if not self.node_init_:
 			print("The spin_and_collect node is not initialized yet. Call self.init_node() first.")
@@ -91,7 +106,7 @@ class spin_and_collect(object):
 if __name__=='__main__':
 	arguments = len(sys.argv) - 1
 
-	print(arguments,sys.argv)
+	# print(arguments,sys.argv)
 	position = 1
 	# Get the robot name passed in by the user
 	robot_namespace=''
