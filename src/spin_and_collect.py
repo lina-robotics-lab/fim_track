@@ -42,9 +42,10 @@ class spin_and_collect(object):
 
 		counter=0 # Keep spinning for total_time
 
-		while not rospy.is_shutdown() and counter<total_time*self.awake_freq_:
+		while (not rospy.is_shutdown()) and counter<total_time*self.awake_freq_:
 				self.spin_()
 				counter+=1
+				# print(counter,total_time*self.awake_freq_)
 				r.sleep()
 
 		# Elegantly stop the robot.
@@ -73,7 +74,7 @@ class spin_and_collect(object):
 		twist.angular.x = 0.0
 		twist.angular.y = 0.0
 		twist.angular.z = self.spin_angular_vel_
-		self.pub.publish(twist)
+		self.pub_.publish(twist)
 		# print(twist)
 		
 	def stop_(self):
@@ -84,23 +85,24 @@ class spin_and_collect(object):
 		twist.angular.x = 0.0
 		twist.angular.y = 0.0
 		twist.angular.z = 0
-		self.pub.publish(twist)
+		self.pub_.publish(twist)
 
 
 if __name__=='__main__':
 	arguments = len(sys.argv) - 1
 
+	print(arguments,sys.argv)
 	position = 1
 	# Get the robot name passed in by the user
 	robot_namespace=''
 	if arguments>=position:
-		robot_namespace='/'+sys.argv[position]
+		robot_namespace=sys.argv[position]
 	
 	position=2
 	# Get the total time of spinning
 	total_time=0
 	if arguments>=position:
-		total_time=sys.argv[position]
+		total_time=float(sys.argv[position]) # Remember to parse the argument string to float
 	
 
 
@@ -111,4 +113,7 @@ if __name__=='__main__':
 	sc.spin_and_collect(robot_namespace,total_time)
 	
 	print(np.array(sc.reading_records))
-	np.savetxt('light_readings_{}.txt'.format(robot_namespace),np.array(sc.reading_records),delimiter=',')
+	np.savetxt('light_readings.txt',np.array(sc.reading_records),delimiter=',')
+	
+	# np.savetxt('light_readings_{}.txt'.format(robot_namespace),np.array(sc.reading_records),delimiter=',')
+	print('light_readings_{}.txt'.format(robot_namespace))
