@@ -113,7 +113,6 @@ if __name__=='__main__':
 	sc.spin_and_collect(robot_namespace,total_time)
 	
 	print(np.array(sc.reading_records))
-	np.savetxt('light_readings.txt',np.array(sc.reading_records),delimiter=',')
 	
-	# np.savetxt('light_readings_{}.txt'.format(robot_namespace),np.array(sc.reading_records),delimiter=',')
+	np.savetxt('light_readings_{}.txt'.format(robot_namespace),np.array(sc.reading_records),delimiter=',')
 	print('light_readings_{}.txt'.format(robot_namespace))
