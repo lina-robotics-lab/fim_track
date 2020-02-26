@@ -76,3 +76,20 @@ This is a copy of the turtlebot3_teleop_key script which accept an additional na
 **robot_namespace** is either "" or "robotname". Notice the forward slash do not need to be included. 
 
 **Behavior:** control the robot movement of the corresponding namespace with keyboard.
+
+---
+
+__calibrate_meas_coef__
+
+This script collects target and robot location data from optitrack and robot light-sensor data in a synchronized way.
+
+**Prerequisite:** The optitrack system is up and streaming location data to vrpn_client_node. The light sensors are publishing readings to sensor_readings.
+
+**Usage:** ``rosrun fim_track calibrate_meas_coef robot_name_space target_namespace``. Then bringup the robot and ``rosrun fim_track manual_teleop_key.py robot_name_space`` to move the robot around while collecting data. Press Ctrl+C to end the recording and store the data to .txt files.
+
+**robot_namespace is compulsory, ** and should be both a robot name and a rigid body name in the optitrack. Notice the forward slash do not need to be included. 
+
+**target_namespace is optional.** By default it is "Lamp".
+
+**Behavior:**  Press Ctrl+C to end the recording and store the data to .txt files. The data is recorded separately into three txt files: light_readings_turtlebotname.txt, robot_loc_turtlebotname.txt, target_loc_targetname.txt, and can be loaded using np.loadtxt(). All files contain the same number of data rows, and each row corresponds to the data collected at the same time.
+
