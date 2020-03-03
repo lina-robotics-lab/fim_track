@@ -85,7 +85,7 @@ This script collects target and robot location data from optitrack and robot lig
 
 **Prerequisite:** The optitrack system is up and streaming location data to vrpn_client_node. The light sensors are publishing readings to sensor_readings.
 
-**Usage:** ``rosrun fim_track calibrate_meas_coef robot_name_space target_namespace``. Then bringup the robot and ``rosrun fim_track manual_teleop_key.py robot_name_space`` to move the robot around while collecting data. Press Ctrl+C to end the recording and store the data to .txt files.
+**Usage:** ``rosrun fim_track calibrate_meas_coef.py robot_name_space target_namespace``. Then bringup the robot and ``rosrun fim_track manual_teleop_key.py robot_name_space`` to move the robot around while collecting data. Press Ctrl+C to end the recording and store the data to .txt files.
 
 **robot_namespace is compulsory, ** and should be both a robot name and a rigid body name in the optitrack. Notice the forward slash do not need to be included. 
 

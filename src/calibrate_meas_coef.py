@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import rospy
 from geometry_msgs.msg import PoseStamped,Pose, Twist
 from std_msgs.msg import Float32MultiArray
@@ -20,12 +20,14 @@ class calibrate_meas_coef:
 		
 		
 	def robot_pose_callback_(self,data):
+		# print(data.pose)
 		self.robot_pose=data.pose
 		
 	def target_pose_callback_(self,data):
 		self.target_pose=data.pose
 
 	def light_callback_(self,data):
+		print(data.data)
 		self.light_readings=data.data
 
 	def pose2xz(self,pose):
@@ -44,7 +46,7 @@ class calibrate_meas_coef:
 		rate=rospy.Rate(self.awake_freq)
 
 		while (not rospy.is_shutdown()):
-			if not( self.robot_pose==None or self.target_pose==None or self.light_readings==None):
+			if not(self.robot_pose==None or self.target_pose==None or self.light_readings==None):
 				print(self.robot_pose)
 				print('target:',self.target_pose)
 				print('light:',self.light_readings)
@@ -68,11 +70,11 @@ if __name__ == '__main__':
 	if arguments>=position:
 		robot_namespace=sys.argv[position]
 
-	position = 1
+	position = 2
 	# Get the robot name passed in by the user
 	target_namespace='Lamp'
 	if arguments>=position:
-		robot_namespace=sys.argv[position]
+		target_namespace=sys.argv[position]
 
 	cmc=calibrate_meas_coef()
 	cmc.record_data(robot_namespace,target_namespace)
