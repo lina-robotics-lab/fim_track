@@ -3,6 +3,7 @@ from sklearn.linear_model import LinearRegression
 def top_n_mean(readings,n):
     rowwise_sort=np.sort(readings,axis=1)
     return np.mean(rowwise_sort[:,-n:],axis=1)
+
 def loss(C_1,dists,light_strengths,C_0=0,loss_type='rmse'):
     # The baseline brightness is not recorded this time. Set it to be zero
     
@@ -21,6 +22,7 @@ def loss(C_1,dists,light_strengths,C_0=0,loss_type='rmse'):
         e=np.sqrt(np.mean((yhat-light_strengths)**2))
     
     return e,C_1,C_0,k,b
+
 ## The once and for all parameter calibration function.
 def calibrate_meas_coef(robot_loc,target_loc,light_readings,loss_type='rmse'):
     dists=np.sqrt(np.sum((robot_loc-target_loc)**2,axis=1))
@@ -29,8 +31,8 @@ def calibrate_meas_coef(robot_loc,target_loc,light_readings,loss_type='rmse'):
     ls=[]
     ks=[]
     bs=[]
-    C_1s= np.linspace(-1,0.4,100)
-    C_0s=np.linspace(-1,1.3,100)
+    C_1s= np.linspace(-1,np.min(dists)-0.01,100)
+    C_0s=np.linspace(-1,np.min(light_strengths)-0.01,100)
     ls=[]
     mls=[]
     for C_1 in C_1s:
@@ -48,11 +50,22 @@ def calibrate_meas_coef(robot_loc,target_loc,light_readings,loss_type='rmse'):
     
     return C_1s[x],C_0s[y],ks[best_indx],bs[best_indx]
 
+
 ## Multi-lateration Localization Algorithm. The shape of readings is (t*num_sensors,), the shape of sensor locs is (t*num_sensors,2). 
 ## For the algorithm to work, sensor_locs shall be not repetitive, and t*num_sensors shall be >=3.
-def multi_lateration(readings,sensor_locs,C1=0.07,C0=1.29,k=15.78,b=-2.16):
-    rhat=((readings-C0)/k)**(1/b)+C1
+def rhat(scalar_readings,C1,C0,k,b):
+    return ((scalar_readings-C0)/k)**(1/b)+C1
+
+def multi_lateration_from_rhat(rhat,sensor_locs):
     A=2*(sensor_locs[-1,:]-sensor_locs)[:-1]
     B=rhat[:-1]**2-rhat[-1]**2+np.sum(sensor_locs[-1,:]**2)-np.sum(sensor_locs[:-1,:]**2,axis=1)
     qhat=np.linalg.pinv(A).dot(B)
     return qhat
+
+def multi_lateration(scalar_readings,sensor_locs,C1=0.07,C0=1.29,k=15.78,b=-2.16):
+    rhat=rhat(scalar_readings,sensor_locs,C1,C0,k,b)
+    return multi_lateration_from_rhat(rhat,sensor_locs)
+
+## Simple pose to (pose.x,pose.z) utility.
+def pose2xz(pose):
+    return np.array([pose.position.x,pose.position.z])

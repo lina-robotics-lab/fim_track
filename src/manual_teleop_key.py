@@ -121,6 +121,9 @@ def checkAngularLimitVelocity(vel):
 
     return vel
 
+
+    
+
 if __name__=="__main__":
     if os.name != 'nt':
         settings = termios.tcgetattr(sys.stdin)
@@ -131,9 +134,7 @@ if __name__=="__main__":
     robot_namespace=''
     if arguments>=position:
         robot_namespace='/'+sys.argv[position]+'/'
-    
-
-
+        
     rospy.init_node('turtlebot3_teleop')
     pub = rospy.Publisher('{}cmd_vel'.format(robot_namespace), Twist, queue_size=10)
 

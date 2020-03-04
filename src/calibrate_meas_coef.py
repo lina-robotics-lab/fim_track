@@ -5,6 +5,8 @@ from std_msgs.msg import Float32MultiArray
 import numpy as np
 import sys
 from spin_and_collect import spin_and_collect
+from RemotePCCodebase import calibrate_meas_coef as cc
+from RemotePCCodebase import pose2xz
 
 class calibrate_meas_coef:
 	def __init__(self):
@@ -30,10 +32,8 @@ class calibrate_meas_coef:
 		print(data.data)
 		self.light_readings=data.data
 
-	def pose2xz(self,pose):
-		return np.array([pose.position.x,pose.position.z])
 	
-	def record_data(self,robot_namespace,target_namespace):
+	def record_and_calibrate(self,robot_namespace,target_namespace,save_data=False):
 		rospy.init_node('calibrate_meas_coef',anonymous=True)
 		
 		rpose_topic="/vrpn_client_node/{}/pose".format(robot_namespace)
@@ -50,16 +50,23 @@ class calibrate_meas_coef:
 				print(self.robot_pose)
 				print('target:',self.target_pose)
 				print('light:',self.light_readings)
-				self.robot_loc_stack.append(self.pose2xz(self.robot_pose))
-				self.target_loc_stack.append(self.pose2xz(self.target_pose))
+				self.robot_loc_stack.append(pose2xz(self.robot_pose))
+				self.target_loc_stack.append(pose2xz(self.target_pose))
 				self.light_reading_stack.append(np.array(self.light_readings))
 			rate.sleep()
-		
-		
-		np.savetxt('robot_loc_{}.txt'.format(robot_namespace),np.array(self.robot_loc_stack),delimiter=',')
-		np.savetxt('target_loc_{}.txt'.format(target_namespace),np.array(self.target_loc_stack),delimiter=',')
-		np.savetxt('light_readings_{}.txt'.format(robot_namespace),np.array(self.light_reading_stack),delimiter=',')
 
+		if save_data:
+			np.savetxt('robot_loc_{}.txt'.format(robot_namespace),np.array(self.robot_loc_stack),delimiter=',')
+			np.savetxt('target_loc_{}.txt'.format(target_namespace),np.array(self.target_loc_stack),delimiter=',')
+			np.savetxt('light_readings_{}.txt'.format(robot_namespace),np.array(self.light_reading_stack),delimiter=',')
+
+		print('Calculating Coefficients...')
+		np.savetxt('coefs_{}.txt'.format(robot_namespace),
+						cc(np.array(self.robot_loc_stack),
+							np.array(self.target_loc_stack),
+							np.array(self.light_reading_stack)))
+		
+		
 if __name__ == '__main__':
 	arguments = len(sys.argv) - 1
 
@@ -77,4 +84,4 @@ if __name__ == '__main__':
 		target_namespace=sys.argv[position]
 
 	cmc=calibrate_meas_coef()
-	cmc.record_data(robot_namespace,target_namespace)
+	cmc.record_and_calibrate(robot_namespace,target_namespace,save_data=True)
