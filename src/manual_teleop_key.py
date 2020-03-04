@@ -135,7 +135,7 @@ if __name__=="__main__":
     if arguments>=position:
         robot_namespace='/'+sys.argv[position]+'/'
         
-    rospy.init_node('turtlebot3_teleop')
+    rospy.init_node('teleop_for_tb',anonymous=True)
     pub = rospy.Publisher('{}cmd_vel'.format(robot_namespace), Twist, queue_size=10)
 
     turtlebot3_model = rospy.get_param("model", "burger")

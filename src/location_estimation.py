@@ -13,7 +13,7 @@ class robot_listener:
 	''' Robot location and light_reading listener+data container.'''
 	def __init__(self,robot_name):
 		self.robot_name=robot_name
-		
+		print('initializing {} listener'.format(robot_name))
 		# Now we are using optitrack as pose listener, so it is vrpn_client_node here.
 		self.rpose_topic="/vrpn_client_node/{}/pose".format(robot_name)
 
@@ -24,6 +24,7 @@ class robot_listener:
 
 		self.robot_loc_stack=[]
 		self.light_reading_stack=[]
+		self.rhats=[]
 
 		self.C1=None
 		self.C0=None
@@ -62,30 +63,37 @@ class location_estimation:
 		self.awake_freq=awake_freq		
 	
 	
-	def localize_target(self,look_back=30):
+	def localize_target(self,look_back=2):
 		# Step 1: get rhat estimation from each of the listeners
 		rhats=[]
 		sensor_locs=[]
 		for l in self.listeners:
-			if l.k!=None:
+			if l.k!=None and len(l.light_reading_stack)>0:
 				
-				
-				
-				scalar_readings=top_n_mean(np.array(l.light_reading_stack[-look_back:]),2)
+				lookback_len=np.min([look_back,len(l.light_reading_stack),len(l.robot_loc_stack)])
+
+				scalar_readings=top_n_mean(np.array(l.light_reading_stack[-lookback_len:]),2)
 
 				rh=rhat(scalar_readings,l.C1,l.C0,l.k,l.b)
 
 				rhats.append(rh)
-				sensor_locs.append(l.robot_loc_stack[-look_back:])
+
+				loc=np.array(l.robot_loc_stack[-lookback_len:]).reshape(-2,2)
+				sensor_locs.append(loc)
+				l.rhats.append(rh)
+
+				# print(rh.shape,loc.shape)	
 
 		if len(rhats)>0:
-			return multi_lateration_from_rhat(np.array(rhats).flatten(),np.vstack(sensor_locs))
+			# print('rh',np.hstack(rhats).ravel().shape,'loc',np.vstack(sensor_locs).shape)
+			return multi_lateration_from_rhat(np.hstack(rhats).ravel(),np.vstack(sensor_locs))
 		return None
 
 	def target_pose_callback_(self,data):
+		# print(data)
 		self.target_pose=data.pose
 
-	def real_time_localization(self,target_name=None):
+	def real_time_localization(self,target_name=None,save_data=True):
 		
 		for l in self.listeners:
 			rospy.Subscriber(l.rpose_topic, PoseStamped, l.robot_pose_callback_)
@@ -93,7 +101,7 @@ class location_estimation:
 			rospy.Subscriber(l.coefs_topic, Float32MultiArray, l.sensor_coef_callback_)
 			
 		if target_name!=None:
-			rospy.Subscriber('/vrpn_client_node/{}/pose'.format(target_name),self.target_pose_callback_)
+			rospy.Subscriber('/vrpn_client_node/{}/pose'.format(target_name),PoseStamped,self.target_pose_callback_)
 
 		rate=rospy.Rate(self.awake_freq)
 
@@ -104,9 +112,10 @@ class location_estimation:
 				if not(l.robot_pose==None or l.light_readings==None):
 				
 					
-					# print('name:',l.robot_name,'pose:',l.robot_pose,'light:',l.light_readings)
+					# print('name:',l.robot_name)
 					l.robot_loc_stack.append(pose2xz(l.robot_pose))
 					l.light_reading_stack.append(np.array(l.light_readings))
+
 
 
 
@@ -120,14 +129,18 @@ class location_estimation:
 				self.estimated_locs.append(est_loc)
 				print(est_loc)
 			
-			if target_name!=None:
+			if target_name!=None and self.target_pose!=None:
 				self.true_target_loc.append(pose2xz(self.target_pose))
 			rate.sleep()
 
-		# np.savetxt('estimated_locs.txt',np.array(self.estimated_locs),delimiter=',')
-		
-		if target_name!=None:
-			np.savetxt('true_target_loc.txt',np.array(self.true_target_loc),delimiter=',')
+		if save_data:
+			np.savetxt('estimated_locs.txt',np.array(self.estimated_locs),delimiter=',')
+			for l in self.listeners:
+				np.savetxt('sensor_locs_{}.txt'.format(l.robot_name),np.array(l.robot_loc_stack),delimiter=',')
+				np.savetxt('rhats_{}.txt'.format(l.robot_name),np.hstack(l.rhats).ravel(),delimiter=',')
+				
+			if target_name!=None:
+				np.savetxt('true_target_loc.txt',np.array(self.true_target_loc),delimiter=',')
 		
 		
 if __name__=='__main__':
@@ -137,9 +150,9 @@ if __name__=='__main__':
 	for i in range(1,arguments+1,1):
 		robot_names.append(sys.argv[i])
 
-	# target_name='Lamp'
+	target_name='Lamp'
 
-	target_name=None
+	# target_name=None
 
 	le=location_estimation(robot_names)
 	le.real_time_localization(target_name=target_name)
