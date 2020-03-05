@@ -63,18 +63,20 @@ class location_estimation:
 		self.awake_freq=awake_freq		
 	
 	
-	def localize_target(self,look_back=2):
+	def localize_target(self,look_back=30):
 		# Step 1: get rhat estimation from each of the listeners
 		rhats=[]
 		sensor_locs=[]
+
 		for l in self.listeners:
 			if l.k!=None and len(l.light_reading_stack)>0:
-				
+						
 				lookback_len=np.min([look_back,len(l.light_reading_stack),len(l.robot_loc_stack)])
 
 				scalar_readings=top_n_mean(np.array(l.light_reading_stack[-lookback_len:]),2)
 
 				rh=rhat(scalar_readings,l.C1,l.C0,l.k,l.b)
+				# print(l.C1,l.C0,l.k,l.b)
 
 				rhats.append(rh)
 
@@ -82,7 +84,7 @@ class location_estimation:
 				sensor_locs.append(loc)
 				l.rhats.append(rh)
 
-				# print(rh.shape,loc.shape)	
+				print(l.robot_name,rh[0])	
 
 		if len(rhats)>0:
 			# print('rh',np.hstack(rhats).ravel().shape,'loc',np.vstack(sensor_locs).shape)

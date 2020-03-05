@@ -33,7 +33,7 @@ class calibrate_meas_coef:
 		self.light_readings=data.data
 
 	
-	def record_and_calibrate(self,robot_namespace,target_namespace,save_data=False):
+	def record_and_calibrate(self,robot_namespace,target_namespace,save_data=False,fit_type='light_readings'):
 		rospy.init_node('calibrate_meas_coef',anonymous=True)
 		
 		rpose_topic="/vrpn_client_node/{}/pose".format(robot_namespace)
@@ -64,7 +64,7 @@ class calibrate_meas_coef:
 		np.savetxt('coefs_{}.txt'.format(robot_namespace),
 						cc(np.array(self.robot_loc_stack),
 							np.array(self.target_loc_stack),
-							np.array(self.light_reading_stack)))
+							np.array(self.light_reading_stack),fit_type=fit_type))
 		
 		
 if __name__ == '__main__':
@@ -78,10 +78,16 @@ if __name__ == '__main__':
 		robot_namespace=sys.argv[position]
 
 	position = 2
-	# Get the robot name passed in by the user
+	# Get the target name passed in by the user
 	target_namespace='Lamp'
 	if arguments>=position:
 		target_namespace=sys.argv[position]
 
+	position = 3
+	# Get the desired fitting mode: loss wrt dist or light readings
+	fit_type="light_readings"
+	if arguments>=position:
+		fit_type=sys.argv[position]
+
 	cmc=calibrate_meas_coef()
-	cmc.record_and_calibrate(robot_namespace,target_namespace,save_data=True)
+	cmc.record_and_calibrate(robot_namespace,target_namespace,save_data=True,fit_type=fit_type)

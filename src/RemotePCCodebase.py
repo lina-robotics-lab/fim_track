@@ -18,6 +18,7 @@ def loss(C_1,dists,light_strengths,C_0=0,fit_type='light_readings',loss_type='rm
     b=model.coef_[0][0]
 
 
+    print('fit_type:',fit_type)
     if fit_type=="light_readings":
         ## h(r)=k(r-C_1)**b+C_0
         yhat=k*(dists-C_1)**b+C_0
@@ -27,11 +28,11 @@ def loss(C_1,dists,light_strengths,C_0=0,fit_type='light_readings',loss_type='rm
         else:
             e=np.sqrt(np.mean((yhat-light_strengths)**2))
     elif fit_type=='dists':
-        rhat=rhat(light_strengths,C_1,C_0,k,b)
+        rh=rhat(light_strengths,C_1,C_0,k,b)
         if loss_type=='max':
-            e=np.sqrt(np.max((rhat-dists)**2))
+            e=np.sqrt(np.max((rh-dists)**2))
         else:
-            e=np.sqrt(np.mean((rhat-dists)**2))
+            e=np.sqrt(np.mean((rh-dists)**2))
     
     return e,C_1,C_0,k,b
 
@@ -50,7 +51,7 @@ def calibrate_meas_coef(robot_loc,target_loc,light_readings,fit_type='light_read
     mls=[]
     for C_1 in C_1s:
         for C_0 in C_0s:
-            
+
             l,C_1,C_0,k,b=loss(C_1,dists,light_strengths,C_0=C_0,fit_type=fit_type,loss_type=loss_type)
             ls.append(l)
             ks.append(k)
@@ -96,3 +97,35 @@ def multi_lateration(scalar_readings,sensor_locs,C1=0.07,C0=1.29,k=15.78,b=-2.16
 ## Simple pose to (pose.x,pose.z) utility.
 def pose2xz(pose):
     return np.array([pose.position.x,pose.position.z])
+
+'''
+    https://stackoverflow.com/questions/55816902/finding-the-intersection-of-two-circles
+'''
+def get_intercetions(p0, r0, p1, r1):
+    # circle 1: (x0, y0), radius r0
+    # circle 2: (x1, y1), radius r1
+    (x0, y0)=p0
+    (x1, y1)=p1
+    d=np.sqrt((x1-x0)**2 + (y1-y0)**2)
+
+    # non intersecting
+    if d > r0 + r1 :
+        return None
+    # One circle within other
+    if d < abs(r0-r1):
+        return None
+    # coincident circles
+    if d == 0 and r0 == r1:
+        return None
+    else:
+        a=(r0**2-r1**2+d**2)/(2*d)
+        h=np.sqrt(r0**2-a**2)
+        x2=x0+a*(x1-x0)/d   
+        y2=y0+a*(y1-y0)/d   
+        x3=x2+h*(y1-y0)/d     
+        y3=y2-h*(x1-x0)/d 
+
+        x4=x2-h*(y1-y0)/d
+        y4=y2+h*(x1-x0)/d
+
+        return np.array([[x3, y3],[x4, y4]])
