@@ -72,7 +72,7 @@ def rhat(scalar_readings,C1,C0,k,b):
     ## h(r)=k(r-C_1)**b+C_0
     return ((scalar_readings-C0)/k)**(1/b)+C1
 
-def multi_lateration_from_rhat(rhat,sensor_locs):
+def multi_lateration_from_rhat(sensor_locs,rhat):
     
     A=2*(sensor_locs[-1,:]-sensor_locs[:-1,:])
     
@@ -90,18 +90,23 @@ def multi_lateration_from_rhat(rhat,sensor_locs):
 
     return qhat
 
-def multi_lateration(scalar_readings,sensor_locs,C1=0.07,C0=1.29,k=15.78,b=-2.16):
-    rhat=rhat(scalar_readings,sensor_locs,C1,C0,k,b)
-    return multi_lateration_from_rhat(rhat,sensor_locs)
+def multi_lateration(sensor_locs,scalar_readings,C1=0.07,C0=1.29,k=15.78,b=-2.16):
+    rhat=rhat(scalar_readings,C1,C0,k,b)
+    return multi_lateration_from_rhat(sensor_locs,rhat)
 
 ## Simple pose to (pose.x,pose.z) utility.
 def pose2xz(pose):
     return np.array([pose.position.x,pose.position.z])
 
+
+
+## Localization with by initial guess and looking at the closest point of intersections.
+
+## This intersection solver provides the building block of an alternative localization solution.
 '''
     https://stackoverflow.com/questions/55816902/finding-the-intersection-of-two-circles
 '''
-def get_intercetions(p0, r0, p1, r1):
+def get_intersections(p0, r0, p1, r1):
     # circle 1: (x0, y0), radius r0
     # circle 2: (x1, y1), radius r1
     (x0, y0)=p0
@@ -129,3 +134,57 @@ def get_intercetions(p0, r0, p1, r1):
         y4=y2+h*(x1-x0)/d
 
         return np.array([[x3, y3],[x4, y4]])
+def get_all_intersections(ps,rs):
+    '''
+    ps: an np array with shape (n,2)
+    rs: an np array with shape (n,)
+    Return value: an np array of coordinates of interceptions, of shape at most (n(n-1),2), 
+    since there will be non-intercepting points.
+    '''
+    rs=np.array(rs)
+    ps=np.array(ps)
+    n=len(rs)
+    assert(ps.shape==(n,2))
+    intercepts=[]
+    for i in range(n):
+        for j in range(i+1,n,1):
+            intcpt=get_intersections(ps[i,:],rs[i],ps[j,:],rs[j])
+            if not intcpt is None:
+                intercepts.append(intcpt)
+    if len(intercepts)>0:
+        return np.vstack(intercepts)
+    else:
+        return None
+    
+
+def closest_points(qs,ps):
+    '''
+    qs: shape (m,2)
+    ps: shape (n,2)
+    Return the closest two points from two sets of points, one from group qs and another from group ps.
+    '''
+    m=qs.shape[0]
+    n=ps.shape[0]
+    dists=np.zeros((m,n))
+
+    for i in range(m):
+        for j in range(n):
+            dists[i][j]=np.linalg.norm(qs[i,:]-ps[j,:])
+    q,p=np.unravel_index(np.argmin(dists),shape=(m,n))
+    return qs[q],ps[p]
+
+def intersection_localization(ps,rs,qhint):
+    '''
+    ps: shape (n,2)
+    rs: shape (n,)
+    qhint: shape (2,)
+    
+    Generate interceptions of circles from ps, rs. Then return the closest interception to qhint.
+		
+    '''
+    intercepts=get_all_intersections(ps,rs)
+    if intercepts is None:
+        return None
+    
+    est_loc,_=closest_points(intercepts,qhint.reshape(1,2))
+    return est_loc

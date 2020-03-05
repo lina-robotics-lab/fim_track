@@ -4,7 +4,7 @@ from geometry_msgs.msg import PoseStamped,Pose, Twist
 from std_msgs.msg import Float32MultiArray
 import numpy as np
 import sys
-from RemotePCCodebase import top_n_mean,pose2xz,rhat,multi_lateration_from_rhat
+from RemotePCCodebase import top_n_mean,pose2xz,rhat,multi_lateration_from_rhat,intersection_localization
 
 
 
@@ -44,7 +44,7 @@ class robot_listener:
 
 
 class location_estimation:
-	def __init__(self,robot_names,awake_freq=10):
+	def __init__(self,robot_names,awake_freq=10,localization_alg='multi_lateration',qhint=np.array([0,0])):
 
 		rospy.init_node('location_estimation',anonymous=True)
 
@@ -61,6 +61,11 @@ class location_estimation:
 		self.estimated_locs=[]
 
 		self.awake_freq=awake_freq		
+
+		self.localization_alg=localization_alg
+
+		self.qhint=qhint
+		
 	
 	
 	def localize_target(self,look_back=30):
@@ -84,11 +89,14 @@ class location_estimation:
 				sensor_locs.append(loc)
 				l.rhats.append(rh)
 
-				print(l.robot_name,rh[0])	
+				# print(l.robot_name,rh[0])	
 
 		if len(rhats)>0:
 			# print('rh',np.hstack(rhats).ravel().shape,'loc',np.vstack(sensor_locs).shape)
-			return multi_lateration_from_rhat(np.hstack(rhats).ravel(),np.vstack(sensor_locs))
+			if self.localization_alg=='multi_lateration':
+				return multi_lateration(np.vstack(sensor_locs),np.hstack(rhats).ravel())
+			elif self.localization_alg=='intersection':
+				return intersection_localization(np.vstack(sensor_locs),np.hstack(rhats).ravel(),self.qhint)
 		return None
 
 	def target_pose_callback_(self,data):
@@ -153,9 +161,11 @@ if __name__=='__main__':
 		robot_names.append(sys.argv[i])
 
 	target_name='Lamp'
-
 	# target_name=None
 
-	le=location_estimation(robot_names)
+	localization_alg='intersection'
+	qhint=np.array([0.6,2.0])
+	
+	le=location_estimation(robot_names,localization_alg=localization_alg,qhint=qhint)
 	le.real_time_localization(target_name=target_name)
 
