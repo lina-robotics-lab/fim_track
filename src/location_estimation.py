@@ -103,7 +103,7 @@ class location_estimation:
 		# print(data)
 		self.target_pose=data.pose
 
-	def real_time_localization(self,target_name=None,save_data=True):
+	def real_time_localization(self,target_name=None,save_data=True,trail_num=0):
 		
 		for l in self.listeners:
 			rospy.Subscriber(l.rpose_topic, PoseStamped, l.robot_pose_callback_)
@@ -144,13 +144,15 @@ class location_estimation:
 			rate.sleep()
 
 		if save_data:
-			np.savetxt('estimated_locs.txt',np.array(self.estimated_locs),delimiter=',')
+			np.savetxt('estimated_locs_{}.txt'.format(trail_num),np.array(self.estimated_locs),delimiter=',')
 			for l in self.listeners:
-				np.savetxt('sensor_locs_{}.txt'.format(l.robot_name),np.array(l.robot_loc_stack),delimiter=',')
-				np.savetxt('rhats_{}.txt'.format(l.robot_name),np.hstack(l.rhats).ravel(),delimiter=',')
+				np.savetxt('sensor_locs_{}_{}.txt'.format(l.robot_name,trail_num),np.array(l.robot_loc_stack),delimiter=',')
+				np.savetxt('rhats_{}_{}.txt'.format(l.robot_name,trail_num),np.hstack(l.rhats).ravel(),delimiter=',')
+				np.savetxt('light_readings_{}_{}.txt'.format(l.robot_name,trail_num),l.light_reading_stack,delimiter=',')
+				np.savetxt('coefs_{}_{}.txt'.format(l.robot_name,trail_num),[l.C1,l.C0,l.k,l.b],delimiter=',')
 				
 			if target_name!=None:
-				np.savetxt('true_target_loc.txt',np.array(self.true_target_loc),delimiter=',')
+				np.savetxt('true_target_loc_{}.txt'.format(trail_num),np.array(self.true_target_loc),delimiter=',')
 		
 		
 if __name__=='__main__':
@@ -167,5 +169,5 @@ if __name__=='__main__':
 	qhint=np.array([0.6,2.0])
 	
 	le=location_estimation(robot_names,localization_alg=localization_alg,qhint=qhint)
-	le.real_time_localization(target_name=target_name)
+	le.real_time_localization(target_name=target_name,trail_num=7)
 
