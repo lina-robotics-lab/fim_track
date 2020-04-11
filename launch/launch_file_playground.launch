@@ -1,0 +1,5 @@
+<launch>
+
+    <node name="simple_print" pkg="fim_track" type="simple_print.py"/>
+
+</launch>
