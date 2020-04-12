@@ -93,3 +93,31 @@ This script collects target and robot location data from optitrack and robot lig
 
 **Behavior:**  Press Ctrl+C to end the recording and store the data to .txt files. The data is recorded separately into three txt files: light_readings_turtlebotname.txt, robot_loc_turtlebotname.txt, target_loc_targetname.txt, and can be loaded using np.loadtxt(). All files contain the same number of data rows, and each row corresponds to the data collected at the same time.
 
+---
+
+__gazebo_simulation_launch__
+
+This script contains utility to launch a Gazebo world with mobile sensors and targets at specified location. It is essentially the more versatile version of a launch file realized by a Python script. 
+
+**Usage:**
+
+It can be used as a stand-alone script, by running
+
+```python
+	rosrun fim_track gazebo_simulation_launch
+```
+
+And an empty Gazebo world with one target and three sensors will be launched. One may view the namespaces of the corresponding objects in rqt_graph, and control their movement via teleop/publishing to cmd_vel.
+
+The ``launch_simulation()`` function in the file can also be used as a utility. 
+
+```python
+launch_simulation(sensor_poses=[],target_poses=[],basis_launch_file=None)	
+```
+
+
+The poses are lists of 4-vectors, each pose is in the format of: [x,y,z,Yaw]. 
+
+The number of sensors and targets to use is automatically determined by the dimensions of poses passed in.
+
+The basis launch file usually contains information about in which .world to the simulation. If basis_launch file is not provided, then the empty world of gazebo_ros will be launched.

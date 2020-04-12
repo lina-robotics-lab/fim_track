@@ -36,6 +36,8 @@ def launch_simulation(sensor_poses=[],target_poses=[],basis_launch_file=None):
 	'''
 		Simplified pose format: [x,y,z,Yaw]. 
 
+		The poses are lists of 4-vectors.
+
 		The number of sensors and targets to use is automatically determined by the dimensions of poses passed in.
 
 		If basis_launch file is not provided, the empty world of gazebo_ros will be launched.
@@ -87,7 +89,7 @@ if __name__ == '__main__':
 	empty_world='{}/launch/empty_world.launch'.format(gazebo_ros_dir)
 
 	launch_simulation(sensor_poses=sensor_poses,target_poses=target_poses,basis_launch_file=empty_world)
-	
+
 
 
 
