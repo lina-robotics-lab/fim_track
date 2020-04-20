@@ -121,3 +121,18 @@ The poses are lists of 4-vectors, each pose is in the format of: [x,y,z,Yaw].
 The number of sensors and targets to use is automatically determined by the dimensions of poses passed in.
 
 The basis launch file usually contains information about in which .world to the simulation. If basis_launch file is not provided, then the empty world of gazebo_ros will be launched.
+
+---
+__monitor_robot_path__
+
+This script records the trajectory of objects on ROS and visualize them in 2D live plots.
+
+**Usage:**
+
+First launch Gazebo simulation and spawn the mobile sensors and targets. Then run
+
+```python
+	rosrun fim_track monitor_robot_path
+```
+
+**Behavior:** a matplotlib window will pop up showing the current positions of the objects. Use teleop to move the objects so as to see the live plot getting updated.
