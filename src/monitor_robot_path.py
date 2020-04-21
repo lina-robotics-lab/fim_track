@@ -16,18 +16,11 @@ from matplotlib import style
 import json
 import numpy as np
 
+from RemotePCCodebase import yaw_from_odom,xy_from_odom
 
 
 
-def quaternion2yaw(q):
-	siny_cosp = 2 * (q.w * q.z + q.x * q.y)
-	cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
-	return atan2(siny_cosp, cosy_cosp)
-def yaw_from_odom(odom):
-	return quaternion2yaw(odom.pose.pose.orientation)
 
-def xy_from_odom(odom):
-	return [odom.pose.pose.position.x,odom.pose.pose.position.y]
 
 def namespace_from_topic(topic):
 	ns=re.search("/.*/",topic) # Search for the first segment enclosed by two forward slashes.

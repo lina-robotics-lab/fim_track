@@ -1,5 +1,16 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
+
+def quaternion2yaw(q):
+    siny_cosp = 2 * (q.w * q.z + q.x * q.y)
+    cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
+    return atan2(siny_cosp, cosy_cosp)
+def yaw_from_odom(odom):
+    return quaternion2yaw(odom.pose.pose.orientation)
+
+def xy_from_odom(odom):
+    return [odom.pose.pose.position.x,odom.pose.pose.position.y]
+
 def top_n_mean(readings,n):
     rowwise_sort=np.sort(readings,axis=1)
     return np.mean(rowwise_sort[:,-n:],axis=1)

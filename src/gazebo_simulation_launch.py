@@ -24,12 +24,14 @@ def spawn_object(model,new_object_name,launch,x,y,z,Y):
 	rospy.set_param(new_object_name,{"robot_description":model_description})
 
 	# Launch the robot_state_publisher node. This publisher makes the object observable and controllable via ROS after being brought to life in Gazebo simulator.
-	node=roslaunch.core.Node(package='robot_state_publisher',node_type='robot_state_publisher',namespace=new_object_name,output='screen')
+	node=roslaunch.core.Node(package='robot_state_publisher',node_type='robot_state_publisher',name='robot_state_publisher',namespace=new_object_name,output='screen')
 	launch.launch(node)
 
 	# Launch the spawn_model node. This bring the object to life in Gazebo simulator.
 	node = roslaunch.core.Node(package='gazebo_ros', node_type='spawn_model',namespace=new_object_name,args='-urdf -model {} -x {} -y {} -z {} -Y {} -param robot_description'.format(new_object_name,x,y,z,Y))
 	launch.launch(node)
+
+
 
 
 def launch_simulation(sensor_poses=[],target_poses=[],basis_launch_file=None):
@@ -67,10 +69,37 @@ def launch_simulation(sensor_poses=[],target_poses=[],basis_launch_file=None):
 	for i, pose in enumerate(target_poses):
 		spawn_object("motion_lamp",'target_{}'.format(i),launch,x=pose[0],y=pose[1],z=pose[2],Y=pose[3])
 
+
+	# Initialize the virtual lights and sensors.
+	target_names=['target_{}'.format(i) for i in range(len(target_poses))]
+	mobile_sensor_names=['mobile_sensor_{}'.format(i) for i in range(len(sensor_poses))]
+
+	
+	for i, pose in enumerate(target_poses):
+		try:
+			virtual_light_node=roslaunch.core.Node(package='fim_track',node_type='virtual_light.py',name='virtual_light_for_{}'.format(target_names[i]),namespace='',args=target_names[i],output='screen')
+			launch.launch(virtual_light_node)
+	
+		except rospy.exceptions.ROSException:
+			print('Object Spawning Error')
+			pass
+
+	
+	for i, pose in enumerate(sensor_poses):
+		try:
+			arg_string="Odom"+" "+mobile_sensor_names[i]+" "+" ".join(target_names)
+			virtual_sensor_node=roslaunch.core.Node(package='fim_track',node_type='virtual_sensor.py',name='virtual_sensor_for_{}'.format(mobile_sensor_names[i]),namespace='',args=arg_string,output='screen')
+			launch.launch(virtual_sensor_node)
+		except rospy.exceptions.ROSException:
+			print('Object Spawning Error')
+			pass
+
+
+
 	try:
 		launch.spin()
-	finally:
-	  # After Ctrl+C, stop all nodes from running
+	except rospy.exceptions.ROSInterruptException:
+		  # After Ctrl+C, stop all nodes from running
 		pass
 
 if __name__ == '__main__':
