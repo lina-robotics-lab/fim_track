@@ -8,7 +8,7 @@ from nav_msgs.msg import Odometry
 import numpy as np
 from functools import partial
 
-from RemotePCCodebase import yaw_from_odom,xy_from_odom
+import RemotePCCodebase 
 
 class virtual_sensor(object):
 	"""
@@ -38,6 +38,7 @@ class virtual_sensor(object):
 		self.C1=0
 		self.C0=2
 		self.b=-2
+		self.r=0.1
 		self.noise_std=1e-1
 		self.relative_theta=np.linspace(0,1,num_sensors)*np.pi
 
@@ -80,7 +81,7 @@ class virtual_sensor(object):
 		
 	def raw_light_strength_callback(self,data,namespace=''):
 		# print('lights call back')
-		self.raw_light_strengths_buffer=data
+		self.raw_light_strengths_buffer[namespace]=data.data
 
 	def target_pose_callback(self,pose,namespace=''):
 		# print('target pose call back',namespace)
@@ -95,6 +96,34 @@ class virtual_sensor(object):
 	def tPose2yaw(self,data):
 		return data.theta
 	
+	def calculate_influence(self,target_name):
+		
+
+		# l[i] denotes the influence of the target on the ith sensor.
+		l=np.zeros(len(self.target_namespaces))
+		
+		# The displacement between the target and the robot
+		q2p=self.target_positions[target_name]-self.robot_position
+
+		# atan2(y,x) returns the angle formed by (x,y) and x axis, ranges in [-pi,pi].
+		phi=np.arctan2(q2p[1],q2p[0])
+
+		# psi has shape (self.num_sensors,), the angle formed by sensor-CM of robot-target.
+		psi=self.relative_theta+self.robot_angle-phi
+
+		# d is the distances of individual sensors to the target. The individual sensors are
+		# located at r distance from the center of the robot(mobile sensor).
+		# The formula is the cosine rule
+		# d should have shape (self.num_sensors,)
+		d=np.sqrt(self.r**2+np.linalg.norm(q2p)**2-2*self.r*np.linalg.norm(q2p)*np.cos(psi))
+
+		# The measurement model, taking into account the facing angle between the sensor and the light direction.
+		# The sensors in the shawdow will only receive background noise.
+		# l should have shape (self.num_sensors,)
+		k=self.raw_light_strengths[target_name]
+		l = np.max(np.array([(k*(d-self.C1)**self.b )*np.cos(psi),np.zeros(self.num_sensors)]),axis=0)
+		
+		return l
 
 	def publish_readings(self):
 
@@ -114,11 +143,11 @@ class virtual_sensor(object):
 			self.raw_light_strengths=self.raw_light_strengths_buffer
 			
 			if self.pose_type is tPose:
-				toxy=self.tPose2xy
-				toyaw=self.tPose2yaw
+				toxy = self.tPose2xy
+				toyaw = self.tPose2yaw
 			elif self.pose_type is Odometry:
-				toxy=self.xy_from_odom
-				toyaw=self.yaw_from_odom
+				toxy = RemotePCCodebase.xy_from_odom
+				toyaw = RemotePCCodebase.yaw_from_odom
 
 			self.robot_position=toxy(self.robot_pose_buffer)
 			self.robot_angle=toyaw(self.robot_pose_buffer)
@@ -127,11 +156,23 @@ class virtual_sensor(object):
 				self.target_positions[target]=toxy(self.target_poses_buffer[target])
 				self.target_angles[target]=toyaw(self.target_poses_buffer[target])
 			# print(self.robot_position,self.robot_angle)
+			
 			# The calculations are done below
 
 			out=Float32MultiArray()
+
 			out.data=self.sensor_readings
+
 			# out.data=list(self.sensor_readings)
+			influences=[]
+			for target in self.target_namespaces:
+				influences.append(self.calculate_influence(target))
+			
+			# The superposition principle: the influence(light strength) of each target(light source)
+			# on each sensor sums to the readings on each sensor
+			self.sensor_readings=np.sum(np.array(influences),axis=0)
+			out=Float32MultiArray()
+			out.data=self.sensor_readings
 			self.light_reading_pub.publish(out)
 
 if __name__ == '__main__':
