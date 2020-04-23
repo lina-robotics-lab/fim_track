@@ -93,6 +93,23 @@ This script collects target and robot location data from optitrack and robot lig
 
 **Behavior:**  Press Ctrl+C to end the recording and store the data to .txt files. The data is recorded separately into three txt files: light_readings_turtlebotname.txt, robot_loc_turtlebotname.txt, target_loc_targetname.txt, and can be loaded using np.loadtxt(). All files contain the same number of data rows, and each row corresponds to the data collected at the same time.
 
+__location_estimation__
+
+This script does location estimation based on the locations and readings from the mobile sensors.
+
+** Prerequisite:** The robots or simulated robots are brought up and are publishing to /mobile_sensor_x/sensor_readings and /mobile_sensor_x/sensor_coefs.
+
+** Usage: ** Specify the following parameters in the location_estimation.py file:
+
+	- robot_names=['mobile_sensor_0',...]
+	- target_name='target_xx'
+	- localization_alg='intersection' or 'multi_lateration' or 'ekf', etc.
+	- qhint=np.array([x,y]), the initial guess of the target location to feed to the estimator.
+	
+	Then run ``rosrun fim_track location_estimation.py``.
+
+	The estimated location of the target will be printed out in real time to the console.
+	
 ---
 
 __gazebo_simulation_launch__
