@@ -9,6 +9,7 @@ import numpy as np
 from functools import partial
 
 import RemotePCCodebase 
+from RemotePCCodebase import *
 
 class virtual_sensor(object):
 	"""
@@ -16,7 +17,7 @@ class virtual_sensor(object):
 
 	The virtual sensor used in simulations. 
 	"""
-	def __init__(self, robot_namespace,target_namespaces, publish_rate=10,pose_type='turtlesimPose', num_sensors=8):
+	def __init__(self, robot_namespace,target_namespaces, publish_rate=10,pose_type_string='turtlesimPose', num_sensors=8):
 		
 		# Parameters ##########################################
 		self.robot_namespace=robot_namespace
@@ -24,19 +25,10 @@ class virtual_sensor(object):
 		
 		self.num_sensors=num_sensors
 
-		if pose_type=='turtlesimPose':
-			self.pose_type=tPose
-			self.pose_topic='pose'
-		elif pose_type=='Pose':
-			self.pose_type=Pose
-			self.pose_topic='pose'
-		elif pose_type=='Odom':
-			self.pose_type=Odometry
-			self.pose_topic='odom'
-
+		self.pose_type,_=get_pose_type_and_topic(pose_type_string,'')
 
 		self.C1=0
-		self.C0=2
+		self.C0=0
 		self.b=-2
 		self.r=0.1
 		self.noise_std=1e-1
@@ -70,14 +62,18 @@ class virtual_sensor(object):
 		for target in target_namespaces:
 			
 			light_sub=rospy.Subscriber('{}/raw_light_strength'.format(target),Float32,partial(self.raw_light_strength_callback,namespace=target))			
-			sub=rospy.Subscriber('{}/{}'.format(target,self.pose_topic),self.pose_type,partial(self.target_pose_callback,namespace=target))
+
+			_,topic=get_pose_type_and_topic(pose_type_string,target)
+			sub=rospy.Subscriber(topic,self.pose_type,partial(self.target_pose_callback,namespace=target))
 	
-		robot_sub=rospy.Subscriber('{}/{}'.format(self.robot_namespace,self.pose_topic),self.pose_type,self.robot_pose_callback)
+		_,topic = get_pose_type_and_topic(pose_type_string,robot_namespace)
+		robot_sub=rospy.Subscriber( topic,self.pose_type,self.robot_pose_callback)
 		
 	
 		# Publisher #########################################
 		# The topic name sensor_readings is consistent with the rest of the package.
 		self.light_reading_pub=rospy.Publisher('{}/sensor_readings'.format(self.robot_namespace),Float32MultiArray,queue_size=10)	
+		self.sensor_coefs_pub=rospy.Publisher('{}/sensor_coefs'.format(self.robot_namespace),Float32MultiArray,queue_size=10)
 		
 	def raw_light_strength_callback(self,data,namespace=''):
 		# print('lights call back')
@@ -124,6 +120,15 @@ class virtual_sensor(object):
 		l = np.max(np.array([(k*(d-self.C1)**self.b )*np.cos(psi),np.zeros(self.num_sensors)]),axis=0)
 		
 		return l
+	def publish_coefs(self):
+		out=Float32MultiArray()
+		if not self.raw_light_strengths_buffer is None:
+			ks=self.raw_light_strengths_buffer
+			if len(ks)>1:
+				out.data=np.array([[self.C1,self.C0,k,self.b] for _,k in ks.items()])
+			elif len(ks)==1:
+				out.data=np.array([self.C1,self.C0,ks[self.target_namespaces[0]],self.b])
+			self.sensor_coefs_pub.publish(out)
 
 	def publish_readings(self):
 
@@ -141,14 +146,8 @@ class virtual_sensor(object):
 		if (not self.robot_pose_buffer is None) and (not self.raw_light_strengths_buffer is None) and target_filled:	
 			# print('can publish')
 			self.raw_light_strengths=self.raw_light_strengths_buffer
-			
-			if self.pose_type is tPose:
-				toxy = self.tPose2xy
-				toyaw = self.tPose2yaw
-			elif self.pose_type is Odometry:
-				toxy = RemotePCCodebase.xy_from_odom
-				toyaw = RemotePCCodebase.yaw_from_odom
 
+			
 			self.robot_position=toxy(self.robot_pose_buffer)
 			self.robot_angle=toyaw(self.robot_pose_buffer)
 				
@@ -188,9 +187,10 @@ if __name__ == '__main__':
 		# print(robot_namespace)
 		# print(target_namespaces)
 
-		v=virtual_sensor(robot_namespace,target_namespaces,pose_type=pose_type)
+		v=virtual_sensor(robot_namespace,target_namespaces,pose_type_string=pose_type)
 		while not rospy.is_shutdown():
 			try:
+				v.publish_coefs()
 				v.publish_readings()
 				v.rate.sleep()
 			except rospy.exceptions.ROSInterruptException:

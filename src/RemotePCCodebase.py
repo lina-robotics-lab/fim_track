@@ -1,5 +1,51 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from geometry_msgs.msg import Pose
+from turtlesim.msg import Pose as tPose
+from nav_msgs.msg import Odometry
+
+def toyaw(pose):
+    if type(pose) is tPose:
+        return tPose2yaw(pose)
+    elif type(pose) is Odometry:
+        return yaw_from_odom(pose)
+    else:
+        print('Pose to yaw conversion is not yet handled for {}'.format(type(pose)))
+        return None
+
+def toxy(pose):
+    if type(pose) is tPose:
+        return tPose2xy(pose)
+    elif type(pose) is Odometry:
+        return xy_from_odom(pose)
+    elif type(pose) is Pose:
+        return pose2xz(pose)
+    else:
+        print('Pose to xy conversion is not yet handled for {}'.format(type(pose)))
+        return None
+
+def get_pose_type_and_topic(pose_type,robot_name):
+
+    if pose_type=='turtlesimPose':
+        pose_type=tPose
+        rpose_topic="/{}/pose".format(robot_name)
+    elif pose_type=='Pose':
+        pose_type=Pose
+        rpose_topic="/{}/pose".format(robot_name)
+    elif pose_type=='Odom':
+        pose_type=Odometry
+        rpose_topic="/{}/odom".format(robot_name)
+    elif pose_type=='optitrack':
+        pose_type=PoseStamped
+        rpose_topic="/vrpn_client_node/{}/pose".format(robot_name)
+
+    return pose_type,rpose_topic
+
+def tPose2xy(data):
+        return np.array([data.x,data.y])
+def tPose2yaw(data):
+        return data.theta
+    
 
 def quaternion2yaw(q):
     siny_cosp = 2 * (q.w * q.z + q.x * q.y)
