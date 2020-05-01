@@ -90,6 +90,13 @@ class location_estimation:
 			rospy.Subscriber('/vrpn_client_node/{}/pose'.format(target_name),PoseStamped,self.target_pose_callback_)
 
 		
+		# Prepare the publishers of location estimation, one for each estimation algorithm.
+		self.estimation_pub=dict()
+		self.algs=['multi_lateration','intersection','ekf']
+		
+		for alg in self.algs:
+			self.estimation_pub[alg]=rospy.Publisher('location_estimation/{}'.format(alg),Float32MultiArray,queue_size=10)
+
 	
 	
 	def localize_target(self,look_back=30):
@@ -181,8 +188,13 @@ class location_estimation:
 			if not est_loc is None:
 				self.estimated_locs.append(est_loc)
 				print('\n Estimation of target location')
-				for key,item in est_loc.items():
-					print('Estimated by {}:{}'.format(key,item))
+				
+				for alg,est in est_loc.items():
+					print('Estimated by {}:{}'.format(alg,est))
+					
+					out=Float32MultiArray()
+					out.data=est
+					self.estimation_pub[alg].publish(out)
 			
 			if target_name!=None and self.target_pose!=None:
 				self.true_target_loc.append(pose2xz(self.target_pose))

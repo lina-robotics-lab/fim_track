@@ -186,9 +186,9 @@ class virtual_sensor(object):
 			
 			# The calculations are done below
 
-			out=Float32MultiArray()
+			# out=Float32MultiArray()
 
-			out.data=self.sensor_readings
+			# out.data=self.sensor_readings
 
 			# out.data=list(self.sensor_readings)
 			influences=[]
