@@ -17,8 +17,14 @@ class virtual_sensor(object):
 
 	The virtual sensor used in simulations. 
 	"""
-	def __init__(self, robot_namespace,target_namespaces, publish_rate=10,pose_type_string='turtlesimPose', num_sensors=8):
+	def __init__(self, robot_namespace,target_namespaces, publish_rate=10,pose_type_string='turtlesimPose', num_sensors=8, output_stype='uniform'):
 		
+		"""
+			pose_type_string is one in ["turtlesimPose", "Pose", "Odom", "optitrack"]
+
+			output_style is one in ["uniform","rotational"]
+		"""
+
 		# Parameters ##########################################
 		self.robot_namespace=robot_namespace
 		self.target_namespaces=target_namespaces
@@ -34,6 +40,7 @@ class virtual_sensor(object):
 		self.noise_std=1e-1
 		self.relative_theta=np.linspace(0,1,num_sensors)*np.pi
 
+		self.output_stype=output_stype
 
 
 		# Local Data Containers #####################################
@@ -94,41 +101,62 @@ class virtual_sensor(object):
 	
 	def calculate_influence(self,target_name):
 		
+		if self.output_stype=='uniform':
+			"""
+				Output the same reading for every light sensor.
+			"""
+			# The displacement between the target and the robot
+			q2p=self.target_positions[target_name]-self.robot_position
 
-		# l[i] denotes the influence of the target on the ith sensor.
-		l=np.zeros(len(self.target_namespaces))
-		
-		# The displacement between the target and the robot
-		q2p=self.target_positions[target_name]-self.robot_position
+			d=np.linalg.norm(q2p)
 
-		# atan2(y,x) returns the angle formed by (x,y) and x axis, ranges in [-pi,pi].
-		phi=np.arctan2(q2p[1],q2p[0])
+			k=self.raw_light_strengths[target_name]
+			
+			l = np.ones(self.num_sensors)*(k*(d-self.C1)**self.b)
 
-		# psi has shape (self.num_sensors,), the angle formed by sensor-CM of robot-target.
-		psi=self.relative_theta+self.robot_angle-phi
+		elif self.output_stype=='rotational':
+			"""
+				Advanced. Taking into account the effect of rotation on light sensor
+				readings, output a different reading for each light sensor.
+			"""
+			# l[i] denotes the influence of the target on the ith sensor.
+			l=np.zeros(len(self.target_namespaces))
+			
+			# The displacement between the target and the robot
+			q2p=self.target_positions[target_name]-self.robot_position
 
-		# d is the distances of individual sensors to the target. The individual sensors are
-		# located at r distance from the center of the robot(mobile sensor).
-		# The formula is the cosine rule
-		# d should have shape (self.num_sensors,)
-		d=np.sqrt(self.r**2+np.linalg.norm(q2p)**2-2*self.r*np.linalg.norm(q2p)*np.cos(psi))
+			# atan2(y,x) returns the angle formed by (x,y) and x axis, ranges in [-pi,pi].
+			phi=np.arctan2(q2p[1],q2p[0])
 
-		# The measurement model, taking into account the facing angle between the sensor and the light direction.
-		# The sensors in the shawdow will only receive background noise.
-		# l should have shape (self.num_sensors,)
-		k=self.raw_light_strengths[target_name]
-		l = np.max(np.array([(k*(d-self.C1)**self.b )*np.cos(psi),np.zeros(self.num_sensors)]),axis=0)
-		
+			# psi has shape (self.num_sensors,), the angle formed by sensor-CM of robot-target.
+			psi=self.relative_theta+self.robot_angle-phi
+
+			# d is the distances of individual sensors to the target. The individual sensors are
+			# located at r distance from the center of the robot(mobile sensor).
+			# The formula is the cosine rule
+			# d should have shape (self.num_sensors,)
+			d=np.sqrt(self.r**2+np.linalg.norm(q2p)**2-2*self.r*np.linalg.norm(q2p)*np.cos(psi))
+
+			# The measurement model, taking into account the facing angle between the sensor and the light direction.
+			# The sensors in the shawdow will only receive background noise.
+			# l should have shape (self.num_sensors,)
+			k=self.raw_light_strengths[target_name]
+			l = np.max(np.array([(k*(d-self.C1)**self.b )*np.cos(psi),np.zeros(self.num_sensors)]),axis=0)
+			
 		return l
 	def publish_coefs(self):
 		out=Float32MultiArray()
 		if not self.raw_light_strengths_buffer is None:
-			ks=self.raw_light_strengths_buffer
-			if len(ks)>1:
-				out.data=np.array([[self.C1,self.C0,k,self.b] for _,k in ks.items()])
-			elif len(ks)==1:
-				out.data=np.array([self.C1,self.C0,ks[self.target_namespaces[0]],self.b])
-			self.sensor_coefs_pub.publish(out)
+			if self.output_stype=='uniform':
+				ks=self.raw_light_strengths_buffer
+				if len(ks)>1:
+					out.data=np.array([[self.C1,self.C0,k,self.b] for _,k in ks.items()])
+				elif len(ks)==1:
+					out.data=np.array([self.C1,self.C0,ks[self.target_namespaces[0]],self.b])
+				self.sensor_coefs_pub.publish(out)
+			else:
+				print("output_stype other than uniform is not yet supported, since it requires coefficient calibration.")
+				pass
 
 	def publish_readings(self):
 

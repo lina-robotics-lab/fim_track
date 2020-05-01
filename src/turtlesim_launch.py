@@ -95,9 +95,9 @@ if __name__ == '__main__':
 	# Simplified pose format: [x,y,theta]. 
 	# The number of sensors and targets to use is automatically determined by the dimensions of poses passed in.
 	sensor_poses=[[2,3,0],\
-	[2,2,0],\
-	[2,4,0]]
-	target_poses=[[8,8,0]]
+	[8,8,0],\
+	[2,8,0]]
+	target_poses=[[5,5,0]]
 
 	# Specify the path to a basis launch file. It usually contains information about the .world file.
 	# Here we use the empty world launch file provided by gazebo_ros.

@@ -41,11 +41,25 @@ def get_pose_type_and_topic(pose_type,robot_name):
 
     return pose_type,rpose_topic
 
+
+"""
+pose is the Standard pose type as defined in geometry_msgs
+"""
+def pose2xz(pose):
+    return np.array([pose.position.x,pose.position.z])
+
+"""
+tPose stands for the ROS data type turtlesim/Pose
+"""
 def tPose2xy(data):
         return np.array([data.x,data.y])
 def tPose2yaw(data):
         return data.theta
     
+
+"""
+The following are the location/yaw converters from Odometry.
+"""
 
 def quaternion2yaw(q):
     siny_cosp = 2 * (q.w * q.z + q.x * q.y)
@@ -54,13 +68,21 @@ def quaternion2yaw(q):
 
 def yaw_from_odom(odom):
     return quaternion2yaw(odom.pose.pose.orientation)
-
 def xy_from_odom(odom):
     return np.array([odom.pose.pose.position.x,odom.pose.pose.position.y])
 
+
 def top_n_mean(readings,n):
+    """
+        top_n_mean is used to convert the reading vector of the 8 light-sensors installed 
+        on Turtlebots into a single scalar value, representing the overall influence of 
+        the light source to the Turtlebots.
+    """
+
     rowwise_sort=np.sort(readings,axis=1)
     return np.mean(rowwise_sort[:,-n:],axis=1)
+
+
 
 def loss(C_1,dists,light_strengths,C_0=0,fit_type='light_readings',loss_type='rmse'):
     '''
@@ -124,11 +146,11 @@ def calibrate_meas_coef(robot_loc,target_loc,light_readings,fit_type='light_read
     return C_1s[x],C_0s[y],ks[best_indx],bs[best_indx]
 
 
-## Multi-lateration Localization Algorithm. The shape of readings is (t*num_sensors,), the shape of sensor locs is (t*num_sensors,2). 
-## For the algorithm to work, sensor_locs shall be not repetitive, and t*num_sensors shall be >=3.
-def rhat(scalar_readings,C1,C0,k,b):
-    ## h(r)=k(r-C_1)**b+C_0
-    return ((scalar_readings-C0)/k)**(1/b)+C1
+
+"""
+ Multi-lateration Localization Algorithm. The shape of readings is (t*num_sensors,), the shape of sensor locs is (t*num_sensors,2). 
+ For the algorithm to work, sensor_locs shall be not repetitive, and t*num_sensors shall be >=3.
+"""
 
 def multi_lateration_from_rhat(sensor_locs,rhat):
     
@@ -148,17 +170,35 @@ def multi_lateration_from_rhat(sensor_locs,rhat):
 
     return qhat
 
+
+def rhat(scalar_readings,C1,C0,k,b):
+    ## h(r)=k(r-C_1)**b+C_0
+    return ((scalar_readings-C0)/k)**(1/b)+C1
+
 def multi_lateration(sensor_locs,scalar_readings,C1=0.07,C0=1.29,k=15.78,b=-2.16):
     rhat=rhat(scalar_readings,C1,C0,k,b)
     return multi_lateration_from_rhat(sensor_locs,rhat)
 
-## Simple pose to (pose.x,pose.z) utility.
-def pose2xz(pose):
-    return np.array([pose.position.x,pose.position.z])
 
 
-
-## Localization with by initial guess and looking at the closest point of intersections.
+"""
+    Localization with by initial guess and looking at the closest point of intersections.
+"""
+def intersection_localization(ps,rs,qhint):
+    '''
+    ps: shape (n,2)
+    rs: shape (n,)
+    qhint: shape (2,)
+    
+    Generate interceptions of circles from ps, rs. Then return the closest interception to qhint.
+        
+    '''
+    intercepts=get_all_intersections(ps,rs)
+    if intercepts is None:
+        return None
+    
+    est_loc,_=closest_points(intercepts,qhint.reshape(1,2))
+    return est_loc
 
 ## This intersection solver provides the building block of an alternative localization solution.
 '''
@@ -231,18 +271,3 @@ def closest_points(qs,ps):
     q,p=np.unravel_index(np.argmin(dists),shape=(m,n))
     return qs[q],ps[p]
 
-def intersection_localization(ps,rs,qhint):
-    '''
-    ps: shape (n,2)
-    rs: shape (n,)
-    qhint: shape (2,)
-    
-    Generate interceptions of circles from ps, rs. Then return the closest interception to qhint.
-		
-    '''
-    intercepts=get_all_intersections(ps,rs)
-    if intercepts is None:
-        return None
-    
-    est_loc,_=closest_points(intercepts,qhint.reshape(1,2))
-    return est_loc
