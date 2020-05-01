@@ -4,6 +4,16 @@ from geometry_msgs.msg import Pose
 from turtlesim.msg import Pose as tPose
 from nav_msgs.msg import Odometry
 
+def prompt_pose_type_string():
+    platform_2_pose_types=dict()
+    platform_2_pose_types['s']="turtlesimPose"
+    platform_2_pose_types['g']='Odom'
+    platform_2_pose_types['t']='Pose'
+    platform_2_pose_types['o']='optitrack'
+
+    platform=input("Please indicate the platform of your experiment.\n s => turtlesim\n g => Gazebo\n t => Real Robots Turtlebot3 \n o => Optitrack:")
+    return platform_2_pose_types[platform]
+
 def toyaw(pose):
     if type(pose) is tPose:
         return tPose2yaw(pose)
@@ -25,7 +35,7 @@ def toxy(pose):
         return None
 
 def get_pose_type_and_topic(pose_type,robot_name):
-
+    
     if pose_type=='turtlesimPose':
         pose_type=tPose
         rpose_topic="/{}/pose".format(robot_name)

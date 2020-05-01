@@ -2,55 +2,14 @@
 import rospy
 from geometry_msgs.msg import PoseStamped,Pose, Twist
 from std_msgs.msg import Float32MultiArray
+from turtlesim.msg import Pose as tPose
+from nav_msgs.msg import Odometry
+
 import numpy as np
 import sys
 from RemotePCCodebase import *
 from DynamicFilters import getDynamicFilter
-
-from turtlesim.msg import Pose as tPose
-from nav_msgs.msg import Odometry
-
-
-
-class robot_listener:
-	''' Robot location and light_reading listener+data container.'''
-	def __init__(self,robot_name,pose_type_string):
-		"""
-			pose_type_string is one in ["turtlesimPose", "Pose", "Odom", "optitrack"]
-		"""
-		self.robot_name=robot_name
-		print('initializing {} listener'.format(robot_name))
-		
-		
-		self.pose_type,self.rpose_topic=get_pose_type_and_topic(pose_type_string,robot_name)
-
-		
-		self.light_topic="/{}/sensor_readings".format(robot_name)
-		self.coefs_topic="/{}/sensor_coefs".format(robot_name)
-		self.robot_pose=None
-		self.light_readings=None
-
-		self.robot_loc_stack=[]
-		self.light_reading_stack=[]
-		self.rhats=[]
-
-		self.C1=None
-		self.C0=None
-		self.k=None
-		self.b=None
-
-
-
-	def sensor_coef_callback_(self,data):
-		coefs=data.data
-		self.C1,self.C0,self.k,self.b=coefs
-
-	def robot_pose_callback_(self,data):
-		self.robot_pose=data
-
-	def light_callback_(self,data):
-
-		self.light_readings=data.data
+from robot_listener import robot_listener
 
 
 class location_estimation:
@@ -81,10 +40,10 @@ class location_estimation:
 		self.dynamic_filter=None
 		self.dynamic_filter_type=dynamic_filter_type
 
-		for l in self.listeners:
-			rospy.Subscriber(l.rpose_topic, l.pose_type, l.robot_pose_callback_)
-			rospy.Subscriber(l.light_topic, Float32MultiArray, l.light_callback_)
-			rospy.Subscriber(l.coefs_topic, Float32MultiArray, l.sensor_coef_callback_)
+		# for l in self.listeners:
+		# 	rospy.Subscriber(l.rpose_topic, l.pose_type, l.robot_pose_callback_)
+		# 	rospy.Subscriber(l.light_topic, Float32MultiArray, l.light_callback_)
+		# 	rospy.Subscriber(l.coefs_topic, Float32MultiArray, l.sensor_coef_callback_)
 			
 		if target_name!=None:
 			rospy.Subscriber('/vrpn_client_node/{}/pose'.format(target_name),PoseStamped,self.target_pose_callback_)
@@ -145,7 +104,7 @@ class location_estimation:
 		# print(data)
 		self.target_pose=data
 
-	def real_time_localization(self,target_name=None,save_data=True,trail_num=0):
+	def start(self,target_name=None,save_data=False,trail_num=0):
 		
 		
 		rate=rospy.Rate(self.awake_freq)
@@ -213,16 +172,8 @@ class location_estimation:
 		
 		
 if __name__=='__main__':
-	platform_2_pose_types=dict()
-	platform_2_pose_types['s']="turtlesimPose"
-	platform_2_pose_types['g']='Odom'
-	platform_2_pose_types['t']='Pose'
-	platform_2_pose_types['o']='optitrack'
 
-	platform=input("Please indicate the platform of your experiment.\n s => turtlesim\n g => Gazebo\n t => Real Robots Turtlebot3 \n o => Optitrack:")
-	pose_type_string=platform_2_pose_types[platform]
-
-	arguments = len(sys.argv) - 1
+	pose_type_string=prompt_pose_type_string()
 
 	robot_names=['mobile_sensor_{}'.format(i) for i in range(3)]
 	# for i in range(1,arguments+1,1):
@@ -235,5 +186,5 @@ if __name__=='__main__':
 	qhint=np.array([5.0,5.0])
 	
 	le=location_estimation(robot_names,pose_type_string,localization_alg=localization_alg,qhint=qhint)
-	le.real_time_localization(target_name=target_name,trail_num=7)
+	le.start(target_name=target_name,trail_num=7)
 
