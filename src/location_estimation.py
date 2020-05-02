@@ -39,11 +39,6 @@ class location_estimation:
 
 		self.dynamic_filter=None
 		self.dynamic_filter_type=dynamic_filter_type
-
-		# for l in self.listeners:
-		# 	rospy.Subscriber(l.rpose_topic, l.pose_type, l.robot_pose_callback_)
-		# 	rospy.Subscriber(l.light_topic, Float32MultiArray, l.light_callback_)
-		# 	rospy.Subscriber(l.coefs_topic, Float32MultiArray, l.sensor_coef_callback_)
 			
 		if target_name!=None:
 			rospy.Subscriber('/vrpn_client_node/{}/pose'.format(target_name),PoseStamped,self.target_pose_callback_)

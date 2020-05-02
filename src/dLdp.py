@@ -7,7 +7,8 @@ auto-differentiation.
 """
 
 import numpy as np
-def analytic_L(q,ps,sigma,C1s,C0s,ks,bs):
+def analytic_L(q,ps,C1s,C0s,ks,bs,sigma=1):
+    
     n_p=len(ps)
     r=jnp.linalg.norm(ps-q,axis=1).reshape(-1,1)
     r_hat=(ps-q)/r
@@ -23,8 +24,10 @@ def analytic_L(q,ps,sigma,C1s,C0s,ks,bs):
     L/=2*sigma**2
     
     return L[0]
-def analytic_dLdp(q,ps,sigma,C1s,C0s,ks,bs):
-
+def analytic_dLdp(q,ps,C1s,C0s,ks,bs,sigma=1):
+    """
+        Typically the sigma value is just a scaling on the magnitude of the gradient, so it can take a default value=1.
+    """
     n_p=len(ps)
     r=np.linalg.norm(ps-q,axis=1).reshape(-1,1)
     r_hat=(ps-q)/r
@@ -58,8 +61,9 @@ def analytic_dLdp(q,ps,sigma,C1s,C0s,ks,bs):
     return dLdp
 
 
-######## d###############################################################
+#### Temporaily Freeze the jax-dependent part. The analytic version has less dependency thus more compatibility.###################################################################
 
+'''
 from jax import grad,jit, jacfwd
 from matplotlib import pyplot as plt
 import jax.numpy as jnp
@@ -114,3 +118,4 @@ def dLdp(q,ps,sigma,C1s,C0s,ks,bs):
         The dLdp caculation using jacfwd.
     """
     return jit(jacfwd(L,argnums=1))(q,ps,sigma,C1s,C0s,ks,bs)
+'''
