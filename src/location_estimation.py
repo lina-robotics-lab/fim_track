@@ -13,7 +13,7 @@ from robot_listener import robot_listener
 
 
 class location_estimation:
-	def __init__(self,robot_names,pose_type_string,awake_freq=10,localization_alg='multi_lateration',qhint=np.array([0,0]),dynamic_filter_type='ekf'):
+	def __init__(self,robot_names,pose_type_string,awake_freq=10,qhint=np.array([0,0]),dynamic_filter_type='ekf'):
 		"""
 			pose_type_string is one in ["turtlesimPose", "Pose", "Odom", "optitrack"]
 		"""
@@ -32,8 +32,6 @@ class location_estimation:
 		self.estimated_locs=[]
 
 		self.awake_freq=awake_freq		
-
-		self.localization_alg=localization_alg
 
 		self.qhint=qhint
 
@@ -168,18 +166,25 @@ class location_estimation:
 		
 if __name__=='__main__':
 
-	pose_type_string=prompt_pose_type_string()
+	arguments = len(sys.argv) - 1
 
-	robot_names=['mobile_sensor_{}'.format(i) for i in range(3)]
-	# for i in range(1,arguments+1,1):
-	#	robot_names.append(sys.argv[i])
+	if arguments<=0:
+		pose_type_string=prompt_pose_type_string()
+		n_robots=int(input('The number of mobile sensors:'))
+	else:
+		if arguments>=1:
+			pose_type_string=sys.argv[1]
+		if arguments>=2:
+			n_robots=int(sys.argv[2])
+			
+	robot_names=['mobile_sensor_{}'.format(i) for i in range(n_robots)]
 
 	# target_name='target_0'
 	target_name=None
 
-	localization_alg='ekf'
+	
 	qhint=np.array([5.0,5.0])
 	
-	le=location_estimation(robot_names,pose_type_string,localization_alg=localization_alg,qhint=qhint)
+	le=location_estimation(robot_names,pose_type_string,qhint=qhint)
 	le.start(target_name=target_name,trail_num=7)
 

@@ -4,6 +4,7 @@ from geometry_msgs.msg import PoseStamped,Pose, Twist
 from std_msgs.msg import Float32MultiArray,MultiArrayLayout
 import numpy as np
 from functools import partial
+import sys
 
 from RemotePCCodebase import prompt_pose_type_string,toxy
 from robot_listener import robot_listener
@@ -142,11 +143,20 @@ class multi_robot_controller(object):
 		
 		
 if __name__ == '__main__':
-	pose_type_string=prompt_pose_type_string()
-	# print(pose_type_string)
-	n_robots=3
 	
+	arguments = len(sys.argv) - 1
+	
+
+	if arguments<=0:
+		pose_type_string=prompt_pose_type_string()
+		n_robots=int(input('The number of mobile sensors:'))
+	else:
+		if arguments>=1:
+			pose_type_string=sys.argv[1]
+		if arguments>=2:
+			n_robots=int(sys.argv[2])
+			
 	robot_names=['mobile_sensor_{}'.format(i) for i in range(n_robots)]
-	
+
 	mlt_controller=multi_robot_controller(robot_names,pose_type_string)	
 	mlt_controller.start()

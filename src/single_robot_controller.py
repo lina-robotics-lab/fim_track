@@ -4,6 +4,7 @@ from geometry_msgs.msg import PoseStamped,Pose, Twist
 from std_msgs.msg import Float32MultiArray
 import numpy as np
 from functools import partial
+import sys
 
 from RemotePCCodebase import prompt_pose_type_string,toxy,toyaw,stop_twist
 from robot_listener import robot_listener
@@ -69,6 +70,7 @@ class single_robot_controller(object):
 	def start(self):
 		rate=rospy.Rate(self.awake_freq)
 
+		
 		while not rospy.is_shutdown():
 			print('single robot:',self.robot_name)
 			if not(self.listener.robot_pose==None):					
@@ -81,14 +83,27 @@ class single_robot_controller(object):
 				self.update_remaining_waypoints()
 				print(vel_msg,'vel_msg')
 				self.vel_pub.publish(vel_msg)
-				
-				
+							
 			rate.sleep()
+	
+
+		self.vel_pub.publish(stop_twist())
+	
+		
 
 if __name__ == '__main__':
-	pose_type_string=prompt_pose_type_string()
+	arguments = len(sys.argv) - 1
 	
-	robot_no=input('The index for this robot is:')
+
+	if arguments<=0:
+		pose_type_string=prompt_pose_type_string()
+		robot_no=input('The index for this robot is:')
+	else:
+		if arguments>=1:
+			pose_type_string=sys.argv[1]
+		if arguments>=2:
+			robot_no=int(sys.argv[2])
+
 	
 	robot_name='mobile_sensor_{}'.format(robot_no)
 	
