@@ -1,8 +1,26 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose,Twist
 from turtlesim.msg import Pose as tPose
 from nav_msgs.msg import Odometry
+def stop_twist():
+    """
+    An all-zero twist.
+    """
+    vel_msg=Twist()
+
+    # Linear velocity in the x-axis.
+
+    vel_msg.linear.x = 0
+    vel_msg.linear.y = 0
+    vel_msg.linear.z = 0
+
+    # Angular velocity in the z-axis.
+    vel_msg.angular.x = 0
+    vel_msg.angular.y = 0
+    vel_msg.angular.z = 0
+
+    return vel_msg
 
 def prompt_pose_type_string():
     platform_2_pose_types=dict()

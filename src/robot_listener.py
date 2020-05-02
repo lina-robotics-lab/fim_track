@@ -20,6 +20,7 @@ class robot_listener:
 		self.light_readings=None
 
 		self.robot_loc_stack=[]
+		self.robot_yaw_stack=[]
 		self.light_reading_stack=[]
 		self.rhats=[]
 

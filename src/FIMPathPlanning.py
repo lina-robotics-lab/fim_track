@@ -36,7 +36,7 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
     
     q=q.reshape(-1,2)
     ps=ps.reshape(-1,2)
-    p_trajs.append(ps)
+    
     for i in range(n_timesteps):
         # Calculate the gradient
         grad=f_dLdp(q,ps)

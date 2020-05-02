@@ -94,9 +94,9 @@ if __name__ == '__main__':
 	# Specify the initial sensor poses and target poses here.
 	# Simplified pose format: [x,y,theta]. 
 	# The number of sensors and targets to use is automatically determined by the dimensions of poses passed in.
-	sensor_poses=[[2,3,0],\
-	[8,8,0],\
-	[2,8,0]]
+	sensor_poses=[[2,3.5,0],\
+	[2,3,0],\
+	[2,2.5,0]]
 	target_poses=[[5,5,0]]
 
 	# Specify the path to a basis launch file. It usually contains information about the .world file.
