@@ -183,7 +183,7 @@ if __name__=='__main__':
 	target_name=None
 
 	
-	qhint=np.array([5.0,5.0])
+	qhint=np.array([1.0,1.0])
 	
 	le=location_estimation(robot_names,pose_type_string,qhint=qhint)
 	le.start(target_name=target_name,trail_num=7)

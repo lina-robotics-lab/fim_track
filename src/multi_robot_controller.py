@@ -30,7 +30,7 @@ class multi_robot_controller(object):
 		The single_robot_sensors will do their job to track the waypoints. This is in fact implementing an MPC algorithm. 
 
 	"""
-	def __init__(self, robot_names,pose_type_string,awake_freq=5):
+	def __init__(self, robot_names,pose_type_string,awake_freq=1):
 		self.robot_names=robot_names
 		self.awake_freq=awake_freq
 		self.n_robots=len(robot_names)

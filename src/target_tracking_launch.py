@@ -25,16 +25,16 @@ def launch_tracking_suite(pose_type_string,n_robots):
 	node=roslaunch.core.Node(package='fim_track',node_type='location_estimation.py',name='location_estimation',namespace='/',args=args,output='screen')
 	launch.launch(node)
 
-	# # Next, the multi_robot_controller for path planning.
-	# args=" ".join([pose_type_string,str(n_robots)])
-	# node=roslaunch.core.Node(package='fim_track',node_type='multi_robot_controller.py',name='multi_robot_controller',namespace='/',args=args,output='screen')
-	# launch.launch(node)
+	# Next, the multi_robot_controller for path planning.
+	args=" ".join([pose_type_string,str(n_robots)])
+	node=roslaunch.core.Node(package='fim_track',node_type='multi_robot_controller.py',name='multi_robot_controller',namespace='/',args=args,output='screen')
+	launch.launch(node)
 
-	# # Finally, as many single_robot_controller as specified
-	# for i in range(n_robots):
-	# 	args=" ".join([pose_type_string,str(i)])
-	# 	node=roslaunch.core.Node(package='fim_track',node_type='single_robot_controller.py',name='single_robot_controller_{}'.format(i),namespace='/',args=args,output='screen')
-	# 	launch.launch(node)
+	# Finally, as many single_robot_controller as specified
+	for i in range(n_robots):
+		args=" ".join([pose_type_string,str(i)])
+		node=roslaunch.core.Node(package='fim_track',node_type='single_robot_controller.py',name='single_robot_controller_{}'.format(i),namespace='/',args=args,output='screen')
+		launch.launch(node)
 
 	try:
 		launch.spin()

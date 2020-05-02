@@ -14,8 +14,8 @@ from geometry_msgs.msg import Twist
 # BURGER_MAX_LIN_VEL = 0.22
 # BURGER_MAX_ANG_VEL = 2.84
 
-BURGER_MAX_LIN_VEL = 0.22*10
-BURGER_MAX_ANG_VEL = 2.84*10
+BURGER_MAX_LIN_VEL = 0.22
+BURGER_MAX_ANG_VEL = 2.84
 turtlebot3_model='burger'
 
 def constrain(input, low, high):
