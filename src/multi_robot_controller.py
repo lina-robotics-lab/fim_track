@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 from geometry_msgs.msg import PoseStamped,Pose, Twist
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray,MultiArrayLayout
 import numpy as np
 from functools import partial
 
@@ -19,7 +19,7 @@ class multi_robot_controller(object):
 
 		multi_robot_controller
 
-		Posession: a list of single_robot_controllers. 
+		Interacts with: a list of single_robot_controller nodes. 
 			Each single_robot_controller has a sequence of waypoints to track. 
 			The job of of each of them is to give commands to individual mobile sensors, until all the waypoints are covered.
 
@@ -41,20 +41,28 @@ class multi_robot_controller(object):
 		self.planning_dt = 1/self.awake_freq
 		self.epsilon=0.1
 
+		# Data containers
+		self.curr_est_locs=dict()
+		self.waypoints=None
+	
+		# ROS setup
+		rospy.init_node('multi_robot_controller',anonymous=False)
 
-		rospy.init_node('multi_robot_controller',anonymous=True)
+		# Pose subscribers
 		self.listeners=[robot_listener(r,pose_type_string) for r in robot_names]
 
-
+		# Estimated location subscribers
 		self.est_loc_sub=dict()
 		self.est_algs=['multi_lateration','intersection','ekf']
 		for alg in self.est_algs:
 			self.est_loc_sub[alg]=rospy.Subscriber('/location_estimation/{}'.format(alg),Float32MultiArray, partial(self.est_loc_callback_,alg=alg))
 
-		self.curr_est_locs=dict()
+		# Waypoint publishers
+		self.waypoint_pub=dict()
+		for name in self.robot_names:
+			self.waypoint_pub[name]=rospy.Publisher('/{}/waypoints'.format(name),Float32MultiArray,queue_size=10)
 
-		self.waypoints=None
-	
+		
 	def est_loc_callback_(self,data,alg):
 		self.curr_est_locs[alg]=np.array(data.data)
 	
@@ -93,7 +101,7 @@ class multi_robot_controller(object):
 
 			q=self.get_est_loc()
 			if q is None:
-				# print('Not received any estimation locs')
+				print('Not received any estimation locs')
 				pass
 			else:
 
@@ -117,6 +125,13 @@ class multi_robot_controller(object):
 					df_dLdp=partial(analytic_dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
 					self.waypoints=FIM_ascent_path_planning(df_dLdp,q,ps,self.n_robots,self.planning_timesteps,self.max_linear_speed,self.planning_dt,self.epsilon)
 					print(self.waypoints.shape)
+					self.waypoints=self.waypoints.reshape(-1,self.n_robots,2)
+					
+
+					for i in range(self.n_robots):
+						out=Float32MultiArray()
+						out.data=self.waypoints[:,i,:].ravel()
+						self.waypoint_pub[self.robot_names[i]].publish(out)
 
 					"""
 						To do: implement the single robot controllers, and feed them with the waypoints!
