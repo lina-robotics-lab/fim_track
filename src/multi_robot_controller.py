@@ -39,7 +39,7 @@ class multi_robot_controller(object):
 		# Path Planning Parameters
 		self.planning_timesteps = 50
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
-		self.planning_dt = 0.5
+		self.planning_dt = 1
 		self.epsilon=0.1
 
 		# Data containers
@@ -69,15 +69,16 @@ class multi_robot_controller(object):
 	
 	def get_est_loc(self):
 		"""
-			By default, use ekf estimation as our estimated location.
+			We will use a heuristic way to determine the estimated location based on the prediction from three candidate algorithms
 		"""
 		keys=self.curr_est_locs.keys()
-		if 'ekf' in keys: 
-			return self.curr_est_locs['ekf']
-		elif 'intersection' in keys:
-			return self.curr_est_locs['intersection']
-		elif 'multi_lateration' in keys:
-			return self.curr_est_locs['multi_lateration']
+		if len(keys)>=3: 
+			anchor=self.curr_est_locs['intersection'].reshape(-1,2)
+			
+			candidates=np.array([self.curr_est_locs['multi_lateration'],self.curr_est_locs['ekf']]).reshape(-1,2)
+			indx=np.argmin(np.linalg.norm(candidates-anchor,axis=1))
+			print('Candidate coord:',candidates[indx,:])
+			return candidates[indx,:]
 		else:
 			return None
 

@@ -53,11 +53,17 @@ class single_robot_controller(object):
 			if len(self.lqr_u)>0:
 				vel_msg=self.lqr_u.popleft()
 		elif self.kernal_algorithm=='TurnAndGo':
-			if len(self.remaining_waypoints)>0:
+			if len(self.remaining_waypoints)>1:
 				loc=self.listener.robot_loc_stack[-1]
 				yaw=self.listener.robot_yaw_stack[-1]
 				target_loc=self.remaining_waypoints[0]
-				vel_msg=TurnAndGo(linear_vel_gain=1.5,angular_vel_gain=6).get_twist(target_loc,loc,yaw)
+				dwaypoints=self.remaining_waypoints[1]-self.remaining_waypoints[0]
+				
+				target_yaw=np.arctan2(dwaypoints[1],dwaypoints[0])
+
+				vel_msg=TurnAndGo(linear_vel_gain=1.5,angular_vel_gain=6).get_twist(target_loc,target_yaw,loc,yaw)
+				if vel_msg==stop_twist():
+					self.remaining_waypoints.popleft()
 		return vel_msg
 	
 	def update_remaining_waypoints(self):
@@ -80,8 +86,6 @@ class single_robot_controller(object):
 			
 			if not self.all_waypoints is None:
 				vel_msg=self.get_next_vel()
-				self.update_remaining_waypoints()
-				print(vel_msg,'vel_msg')
 				self.vel_pub.publish(vel_msg)
 							
 			rate.sleep()

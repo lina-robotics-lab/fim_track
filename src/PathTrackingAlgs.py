@@ -36,11 +36,11 @@ class TurnAndGo:
 		self.angular_vel_gain=angular_vel_gain
 		self.reached_tolerance=reached_tolerance
 	
-	def get_twist(self,target_loc,curr_loc,curr_yaw):
+	def get_twist(self,target_loc,target_yaw,curr_loc,curr_yaw):
 		self.loc=np.array(curr_loc).ravel()
 		self.yaw=curr_yaw
 
-		if np.linalg.norm(target_loc-self.loc)<=self.reached_tolerance:
+		if np.linalg.norm(target_loc-self.loc)<=self.reached_tolerance and np.abs(curr_yaw-target_yaw)<self.reached_tolerance*np.pi:
 			return stop_twist()
 		"""
 		This is a linear distance-based Proportional controller. v=Kv*||p-p_target||, w=Kw*|theta-target_yaw_to_me|
@@ -56,7 +56,7 @@ class TurnAndGo:
 		# Angular velocity in the z-axis.
 		vel_msg.angular.x = 0
 		vel_msg.angular.y = 0
-		vel_msg.angular.z = self._angular_vel(target_loc)
+		vel_msg.angular.z = self._angular_vel(target_yaw)
 		vel_msg.angular.z=self._legal_angular_vel(vel_msg.angular.z)
 		
 		return vel_msg
@@ -69,6 +69,7 @@ class TurnAndGo:
 		else:
 		  v = constrain(v, -BURGER_MAX_LIN_VEL, BURGER_MAX_LIN_VEL)
 		return v
+
 	def _legal_angular_vel(self, w):
 		if turtlebot3_model == "burger":
 		  w = constrain(w, -BURGER_MAX_ANG_VEL, BURGER_MAX_ANG_VEL)
@@ -83,15 +84,15 @@ class TurnAndGo:
 		target_loc=np.array(target_loc).reshape(self.loc.shape)
 		return self.linear_vel_gain * np.linalg.norm(target_loc-self.loc)
 
-	def _steering_angle(self, target_loc):
-		"""See video: https://www.youtube.com/watch?v=Qh15Nol5htM."""
-		target_loc=np.array(target_loc).reshape(self.loc.shape)
-		displacement=target_loc-self.loc
-		return np.arctan2(displacement[1],displacement[0])
+	# def _steering_angle(self, target_loc):
+	# 	"""See video: https://www.youtube.com/watch?v=Qh15Nol5htM."""
+	# 	target_loc=np.array(target_loc).reshape(self.loc.shape)
+	# 	displacement=target_loc-self.loc
+	# 	return np.arctan2(displacement[1],displacement[0])
 
-	def _angular_vel(self, target_loc):
+	def _angular_vel(self, target_yaw):
 		"""See video: https://www.youtube.com/watch?v=Qh15Nol5htM."""
-		return self.angular_vel_gain * (self._steering_angle(target_loc) - self.yaw)
+		return self.angular_vel_gain * (target_yaw - self.yaw)
 	
 	
 	
