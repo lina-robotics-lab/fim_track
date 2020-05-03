@@ -57,11 +57,7 @@ class single_robot_controller(object):
 				loc=self.listener.robot_loc_stack[-1]
 				yaw=self.listener.robot_yaw_stack[-1]
 				target_loc=self.remaining_waypoints[0]
-				dwaypoints=self.remaining_waypoints[1]-self.remaining_waypoints[0]
-				
-				target_yaw=np.arctan2(dwaypoints[1],dwaypoints[0])
-
-				vel_msg=TurnAndGo(linear_vel_gain=1.5,angular_vel_gain=6).get_twist(target_loc,target_yaw,loc,yaw)
+				vel_msg=TurnAndGo(linear_vel_gain=1.5,angular_vel_gain=6).get_twist(target_loc,loc,yaw)
 				if vel_msg==stop_twist():
 					self.remaining_waypoints.popleft()
 		return vel_msg
@@ -76,22 +72,23 @@ class single_robot_controller(object):
 	def start(self):
 		rate=rospy.Rate(self.awake_freq)
 
-		
-		while not rospy.is_shutdown():
-			print('single robot:',self.robot_name)
-			if not(self.listener.robot_pose==None):					
-				self.listener.robot_loc_stack.append(toxy(self.listener.robot_pose))
-				self.listener.robot_yaw_stack.append(toyaw(self.listener.robot_pose))
-				print(self.listener.robot_yaw_stack[-1])	
-			
-			if not self.all_waypoints is None:
-				vel_msg=self.get_next_vel()
-				self.vel_pub.publish(vel_msg)
-							
-			rate.sleep()
-	
-
-		self.vel_pub.publish(stop_twist())
+		try:
+			while not rospy.is_shutdown():
+				print('single robot:',self.robot_name)
+				if not(self.listener.robot_pose==None):					
+					self.listener.robot_loc_stack.append(toxy(self.listener.robot_pose))
+					self.listener.robot_yaw_stack.append(toyaw(self.listener.robot_pose))
+					print(self.listener.robot_yaw_stack[-1])	
+				
+				if not self.all_waypoints is None:
+					vel_msg=self.get_next_vel()
+					self.vel_pub.publish(vel_msg)
+								
+				rate.sleep()
+		except:
+			pass
+		finally:
+			self.vel_pub.publish(stop_twist())
 	
 		
 

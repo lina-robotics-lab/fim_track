@@ -35,8 +35,9 @@ if os.name == 'nt':
 else:
   import tty, termios
 
-BURGER_MAX_LIN_VEL = 0.22
-BURGER_MAX_ANG_VEL = 2.84
+# We hack the max vel for manual teleop so that the robots can drive super fast in simulations.
+BURGER_MAX_LIN_VEL = 0.22*10
+BURGER_MAX_ANG_VEL = 2.84*10
 
 WAFFLE_MAX_LIN_VEL = 0.26
 WAFFLE_MAX_ANG_VEL = 1.82
