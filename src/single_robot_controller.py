@@ -53,13 +53,20 @@ class single_robot_controller(object):
 			if len(self.lqr_u)>0:
 				vel_msg=self.lqr_u.popleft()
 		elif self.kernal_algorithm=='TurnAndGo':
-			if len(self.remaining_waypoints)>1:
+
+			while len(self.remaining_waypoints)>0:	
+				
 				loc=self.listener.robot_loc_stack[-1]
 				yaw=self.listener.robot_yaw_stack[-1]
 				target_loc=self.remaining_waypoints[0]
-				vel_msg=TurnAndGo(linear_vel_gain=1.5,angular_vel_gain=6).get_twist(target_loc,loc,yaw)
-				if vel_msg==stop_twist():
+
+				vel_msg=TurnAndGo(angular_vel_gain=6).get_twist(target_loc,loc,yaw)
+				
+				if vel_msg==stop_twist(): # For TurnAndGo, returning stop_twist means the current waypoint is arrived.
 					self.remaining_waypoints.popleft()
+				else: # If the returned vel_msg is not stop_twist, then exit the loop.
+					break
+					
 		return vel_msg
 	
 	def update_remaining_waypoints(self):

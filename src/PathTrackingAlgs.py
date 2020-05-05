@@ -29,10 +29,9 @@ def constrain(input, low, high):
 
 class TurnAndGo:
 
-	def __init__(self,linear_vel_gain=1.5,angular_vel_gain=6,reached_tolerance=0.1):
+	def __init__(self,angular_vel_gain=6,reached_tolerance=0.1):
 		self.loc=None
 		self.yaw=None
-		self.linear_vel_gain=linear_vel_gain
 		self.angular_vel_gain=angular_vel_gain
 		self.reached_tolerance=reached_tolerance
 	
