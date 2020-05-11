@@ -121,6 +121,8 @@ if __name__ == '__main__':
 
 	# Specify the path to a basis launch file. It usually contains information about the .world file.
 	# Here we use the empty world launch file provided by gazebo_ros.
+	noise_level=input('Additive Gaussian Noise Std(a non-negative number):')
+	rospy.set_param('noise_level',float(noise_level))
 	gazebo_ros_dir=rospkg.RosPack().get_path('gazebo_ros')
 	empty_world='{}/launch/empty_world.launch'.format(gazebo_ros_dir)
 

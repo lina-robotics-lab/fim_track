@@ -99,6 +99,8 @@ if __name__ == '__main__':
 	[2,2.5,0]]
 	target_poses=[[5,5,0]]
 
+	noise_level=input('Additive Gaussian Noise Std(a non-negative number):')
+	rospy.set_param('noise_level',float(noise_level))
 	# Specify the path to a basis launch file. It usually contains information about the .world file.
 	# Here we use the empty world launch file provided by gazebo_ros.
 	launch_simulation(sensor_poses=sensor_poses,target_poses=target_poses)

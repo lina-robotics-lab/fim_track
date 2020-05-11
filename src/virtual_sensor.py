@@ -37,7 +37,7 @@ class virtual_sensor(object):
 		self.C0=0
 		self.b=-2
 		self.r=0.1
-		self.noise_std=1e-1
+		self.noise_std=rospy.get_param('noise_level')
 		self.relative_theta=np.linspace(0,1,num_sensors)*np.pi
 
 		self.output_stype=output_stype
@@ -193,11 +193,19 @@ class virtual_sensor(object):
 			# out.data=list(self.sensor_readings)
 			influences=[]
 			for target in self.target_namespaces:
-				influences.append(self.calculate_influence(target))
+				infl=self.calculate_influence(target)
+				influences.append(infl)
 			
 			# The superposition principle: the influence(light strength) of each target(light source)
 			# on each sensor sums to the readings on each sensor
-			self.sensor_readings=np.sum(np.array(influences),axis=0)
+			# plus some iid white noise.
+			# We do not truncate the influences to be above zero here.
+			
+			influences = np.array(influences) # shape = (num_targets,num_sensors)
+			self.sensor_readings=np.sum(influences,axis=0) # shape = (num_senosrs,)
+			self.sensor_readings+=np.random.randn(self.num_sensors)*self.noise_std # Add the iid white noise.
+
+
 			out=Float32MultiArray()
 			out.data=self.sensor_readings
 			self.light_reading_pub.publish(out)
