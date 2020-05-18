@@ -94,10 +94,10 @@ if __name__ == '__main__':
 	# Specify the initial sensor poses and target poses here.
 	# Simplified pose format: [x,y,theta]. 
 	# The number of sensors and targets to use is automatically determined by the dimensions of poses passed in.
-	sensor_poses=[[2,3.5,0],\
-	[2,3,0],\
-	[2,2.5,0]]
-	target_poses=[[5,5,0]]
+	sensor_poses=[[3,3.5,-3.04],\
+	[3,3,-3.04],\
+	[3,2.5,-3.04]]
+	target_poses=[[1,5,3.14/2]]
 
 	noise_level=input('Additive Gaussian Noise Std(a non-negative number):')
 	rospy.set_param('noise_level',float(noise_level))

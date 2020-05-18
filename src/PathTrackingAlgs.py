@@ -32,7 +32,10 @@ class TurnAndGo:
 	def __init__(self,angular_vel_gain=6,reached_tolerance=0.1):
 		self.loc=None
 		self.yaw=None
-		self.angular_vel_gain=angular_vel_gain
+
+		# Ensure the gain is positive, and does not drive the omega above BURGER_MAX_ANG_VEL.
+		self.angular_vel_gain=constrain(angular_vel_gain,0,BURGER_MAX_ANG_VEL/np.pi)
+		
 		self.reached_tolerance=reached_tolerance
 	
 	def get_twist(self,target_loc,curr_loc,curr_yaw):
@@ -98,7 +101,15 @@ class TurnAndGo:
 
 	def _angular_vel(self, target_yaw):
 		"""See video: https://www.youtube.com/watch?v=Qh15Nol5htM."""
-		return self.angular_vel_gain * (target_yaw - self.yaw)
+		# New version, taking into consideration the most efficient direction of turning.
+		if np.abs(target_yaw - self.yaw)<np.abs(2*np.pi - target_yaw + self.yaw): 
+			return self.angular_vel_gain * (target_yaw - self.yaw)
+		else:
+			return - self.angular_vel_gain * (2*np.pi - target_yaw + self.yaw)
+
+		# Old version
+		# return self.angular_vel_gain * (target_yaw - self.yaw)
+
 	
 	
 	
