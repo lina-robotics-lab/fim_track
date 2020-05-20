@@ -45,7 +45,7 @@ def analytic_dLdp(q,ps,C1s,C0s,ks,bs,sigma=1):
         sum_eta=sum_kr=0
         for j in range(n_p):
                 
-            rkrj=np.min([r_hat[i,:].dot(r_hat[j,:]),1])
+            rkrj=np.max([np.min([r_hat[i,:].dot(r_hat[j,:]),1]),-1])
             
             direction=np.sign(np.linalg.det(r_hat[[j,i],:]))
 

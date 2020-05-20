@@ -1,6 +1,6 @@
 import numpy as np
 
-from RemotePCCodebase import stop_twist
+from RemotePCCodebase import stop_twist,angle_substract
 
 from geometry_msgs.msg import Twist
 
@@ -102,11 +102,8 @@ class TurnAndGo:
 	def _angular_vel(self, target_yaw):
 		"""See video: https://www.youtube.com/watch?v=Qh15Nol5htM."""
 		# New version, taking into consideration the most efficient direction of turning.
-		if np.abs(target_yaw - self.yaw)<np.abs(2*np.pi - target_yaw + self.yaw): 
-			return self.angular_vel_gain * (target_yaw - self.yaw)
-		else:
-			return - self.angular_vel_gain * (2*np.pi - target_yaw + self.yaw)
-
+		return self.angular_vel_gain * angle_substract(target_yaw , self.yaw)
+		
 		# Old version
 		# return self.angular_vel_gain * (target_yaw - self.yaw)
 

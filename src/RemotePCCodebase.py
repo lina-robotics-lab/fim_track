@@ -3,6 +3,15 @@ from sklearn.linear_model import LinearRegression
 from geometry_msgs.msg import Pose,Twist
 from turtlesim.msg import Pose as tPose
 from nav_msgs.msg import Odometry
+
+def angle_substract(theta1,theta2):
+    # Return the most efficient substraction of theta1-theta2.
+
+    if np.abs(theta1 - theta2)<np.abs(2*np.pi - theta1 + theta2): 
+        return  theta1 - theta2
+    else:
+        return - (2*np.pi - theta1 + theta2)
+
 def stop_twist():
     """
     An all-zero twist.
