@@ -1,46 +1,51 @@
-import numpy as np
+BURGER_MAX_LIN_VEL = 0.22
+BURGER_MAX_ANG_VEL = 2.84
 
-def fit_spatial_polynomial(waypoints,poly_order, state_space_dim):
-    """
-        Fit a spatial polynomial p(s)-> R^state_space_dim, s in 0~1, to fit the waypoints.
-    """
-    if waypoints.shape[1]!=state_space_dim:
-        waypoints=waypoints.T
+def unscaled_2D_spline_motion(waypoints,poly_order, state_space_dim):
     
-    assert(waypoints.shape[1]==state_space_dim)
-    
-    n = waypoints.shape[0]
+    # Local Helper Functions
+    def fit_spatial_polynomial(waypoints,poly_order, state_space_dim):
+        """
+            Fit a spatial polynomial p(s)-> R^state_space_dim, s in 0~1, to fit the waypoints.
+        """
+        if waypoints.shape[1]!=state_space_dim:
+            waypoints=waypoints.T
 
-    s = np.array([i/(n-1) for i in range(n)])
-    S = np.vstack([np.power(s,k) for k in range(poly_order+1)])
-    S = S.T
-    
-    # The two formulas below are equivalent if S is full rank.
-#     poly_coefs= np.linalg.inv(S.dot(S.T))).dot(waypoints)
-    poly_coefs = np.linalg.pinv(S).dot(waypoints)
-    return poly_coefs,S
+        assert(waypoints.shape[1]==state_space_dim)
 
-def polynomial(poly_coefs,x):
-    '''
-        Evaluate the value of the polynomial specified by poly_coefs at locations x.
-    '''
-    S = np.vstack([np.power(x,k) for k in range(len(poly_coefs))])
-    y = np.array(poly_coefs).dot(S)
-    return y
-def diff_poly_coefs(poly_coefs):
-    '''
-        Calculate the coefs of the polynomial after taking the first-order derivative.
-    '''
-    if len(poly_coefs)==1:
-        coefs = [0]
-    else:
-        coefs = np.array(range(len(poly_coefs)))*poly_coefs
-        coefs = coefs[1:]
-    return coefs
+        n = waypoints.shape[0]
 
-def generate_2D_spline_motion(waypoints,poly_order, state_space_dim):
+        s = np.array([i/(n-1) for i in range(n)])
+        S = np.vstack([np.power(s,k) for k in range(poly_order+1)])
+        S = S.T
+
+        # The two formulas below are equivalent if S is full rank.
+    #     poly_coefs= np.linalg.inv(S.dot(S.T))).dot(waypoints)
+        poly_coefs = np.linalg.pinv(S).dot(waypoints)
+        return poly_coefs,S
+
+    # A debug-purpose function.
+    # def polynomial(poly_coefs,x):
+    #     '''
+    #         Evaluate the value of the polynomial specified by poly_coefs at locations x.
+    #     '''
+    #     S = np.vstack([np.power(x,k) for k in range(len(poly_coefs))])
+    #     y = np.array(poly_coefs).dot(S)
+    #     return y
+
+    def diff_poly_coefs(poly_coefs):
+        '''
+            Calculate the coefs of the polynomial after taking the first-order derivative.
+        '''
+        if len(poly_coefs)==1:
+            coefs = [0]
+        else:
+            coefs = np.array(range(len(poly_coefs)))*poly_coefs
+            coefs = coefs[1:]
+        return coefs
+    ######### End of Helper Functions #################################
+
     coef,S = fit_spatial_polynomial(waypoints,poly_order, state_space_dim)
-    
     # coef.shape = (poly_order+1,state_space_dim)
     # S.shape = (n_waypoints,poly_order+1), 
     # S = [[1,s_i,s_i^2,s_i^3,...,s_i^poly_order]]_{i=0...n_waypoints}, s_i = i/n_waypoints
@@ -69,3 +74,17 @@ def generate_2D_spline_motion(waypoints,poly_order, state_space_dim):
     omega = (pDDot[:,1]*pDot[:,0]-pDDot[:,0]*pDot[:,1])/np.power(v,2)
     # The angular velocity, rotating counter-clockwise as positive. shape=(n_waypoints,)
     return p,pDot,pDDot,theta,v,omega
+def scaled_2D_spline_motion(waypoints,poly_order, state_space_dim):
+    Vm = BURGER_MAX_LIN_VEL
+    Om = BURGER_MAX_ANG_VEL
+    
+    p,pDot,pDDot,theta,v,omega = unscaled_2D_spline_motion(waypoints,poly_order, state_space_dim)
+    
+    dsdt = np.min([Vm/np.abs(v),Om/np.abs(omega)],axis=0)
+#   dsdt is the scaling factor to be multiplied on v and omega, 
+#   so that they do not exceed the maximal velocity limit, while go as fast as possible.
+    
+    v*=dsdt
+    omega*=dsdt
+    
+    return p,theta,v,omega,dsdt
