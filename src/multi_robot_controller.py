@@ -30,7 +30,7 @@ class multi_robot_controller(object):
 		The single_robot_sensors will do their job to track the waypoints. This is in fact implementing an MPC algorithm. 
 
 	"""
-	def __init__(self, robot_names,pose_type_string,awake_freq=1):
+	def __init__(self, robot_names,pose_type_string,awake_freq=2):
 		self.robot_names=robot_names
 		self.awake_freq=awake_freq
 		self.n_robots=len(robot_names)
@@ -73,12 +73,13 @@ class multi_robot_controller(object):
 		"""
 		keys=self.curr_est_locs.keys()
 		if len(keys)>=3: 
-			anchor=self.curr_est_locs['intersection'].reshape(-1,2)
+			# anchor=self.curr_est_locs['intersection'].reshape(-1,2)
 			
-			candidates=np.array([self.curr_est_locs['multi_lateration'],self.curr_est_locs['ekf']]).reshape(-1,2)
-			indx=np.argmin(np.linalg.norm(candidates-anchor,axis=1))
-			print('Candidate coord:',candidates[indx,:])
-			return candidates[indx,:]
+			# candidates=np.array([self.curr_est_locs['multi_lateration'],self.curr_est_locs['ekf']]).reshape(-1,2)
+			# indx=np.argmin(np.linalg.norm(candidates-anchor,axis=1))
+			# print('Candidate coord:',candidates[indx,:])
+			# return candidates[indx,:]
+			return self.curr_est_locs['ekf']
 		else:
 			return None
 
