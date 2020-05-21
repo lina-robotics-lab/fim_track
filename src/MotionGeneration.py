@@ -16,6 +16,8 @@ def unscaled_spline_motion(waypoints,poly_order, space_dim,n_output):
         assert(waypoints.shape[1]==space_dim)
 
         n = waypoints.shape[0]
+        if n<=1:
+            return []
 
         s = np.array([i/(n-1) for i in range(n)])
         S = np.vstack([np.power(s,k) for k in range(poly_order+1)])
@@ -46,7 +48,8 @@ def unscaled_spline_motion(waypoints,poly_order, space_dim,n_output):
             coefs = coefs[1:]
         return coefs
     ######### End of Helper Functions #################################
-    
+    if n_output <=1:
+        return np.array([]),np.array([]),np.array([]),np.array([]),np.array([]),np.array([])
     coef = fit_spatial_polynomial(waypoints,poly_order, space_dim)
     s = np.array([i/(n_output-1) for i in range(n_output)])
     S = np.vstack([np.power(s,k) for k in range(poly_order+1)])
@@ -91,6 +94,8 @@ def scaled_spline_motion(waypoints,wakeup_dt,poly_order=3,space_dim=2):
     
     # Prepare the data for calculating nstar
     n_waypoints=len(waypoints)
+    if len(waypoints)<=1:
+        return [],[],[],[],[]
     N=np.max([100,4*n_waypoints]) 
     # Heuristic choice. The number of grid points to be used in grid_search for determining nstar.
     p,pDot,pDDot,theta,v,omega = unscaled_spline_motion(waypoints,poly_order, space_dim,N)
@@ -100,6 +105,7 @@ def scaled_spline_motion(waypoints,wakeup_dt,poly_order=3,space_dim=2):
     m = np.min([Vm/np.abs(v),Om/np.abs(omega)],axis=0)
     mstar=np.min(m)
     nstar = int(np.ceil(1/(mstar*wakeup_dt)))
+
     
     dsdt =  1/(nstar*wakeup_dt)
     p,pDot,pDDot,theta,v,omega = unscaled_spline_motion(waypoints,poly_order, space_dim,nstar)

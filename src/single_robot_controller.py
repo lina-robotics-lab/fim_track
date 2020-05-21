@@ -23,7 +23,7 @@ class single_robot_controller(object):
 
 	 Controller Kernel Algorithm: LQR for waypoint tracking.
 	"""
-	def __init__(self, robot_name,pose_type_string,awake_freq=2,kernel_algorithm='LQR'):
+	def __init__(self, robot_name,pose_type_string,awake_freq=10,kernel_algorithm='LQR'):
 		# Parameters
 		self.robot_name=robot_name
 		self.awake_freq=awake_freq
