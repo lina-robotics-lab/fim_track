@@ -6,7 +6,7 @@ import numpy as np
 from functools import partial
 import sys
 
-from RemotePCCodebase import prompt_pose_type_string,toxy,toyaw,stop_twist
+from RemotePCCodebase import prompt_pose_type_string,toxy,toyaw,stop_twist,get_twist
 from robot_listener import robot_listener
 from collections import deque
 from TurnAndGoTracking import TurnAndGo
@@ -23,7 +23,7 @@ class single_robot_controller(object):
 
 	 Controller Kernel Algorithm: LQR for waypoint tracking.
 	"""
-	def __init__(self, robot_name,pose_type_string,awake_freq=10,kernel_algorithm='LQR'):
+	def __init__(self, robot_name,pose_type_string,awake_freq=2,kernel_algorithm='LQR'):
 		# Parameters
 		self.robot_name=robot_name
 		self.awake_freq=awake_freq
@@ -33,7 +33,8 @@ class single_robot_controller(object):
 		# Data containers
 		self.all_waypoints=None
 		self.remaining_waypoints=None
-		self.lqr_u=deque() # Should be a deque of twists
+		self.lqr_u=deque()
+		self.curr_lqr_ind=0
 
 		# ROS Setup
 		rospy.init_node('single_robot_controller_{}'.format(self.robot_name))
@@ -45,23 +46,26 @@ class single_robot_controller(object):
 
 	def waypoint_callback_(self,data):
 		self.all_waypoints=np.array(data.data).reshape(-1,2)
+		if self.kernel_algorithm=='LQR':
+			print('waypoints received')
 		
-		loc=self.listener.robot_loc_stack[-1]
-		yaw=self.listener.robot_yaw_stack[-1]
-		curr_x = np.array([loc[0],loc[1],yaw])
+			loc=self.listener.robot_loc_stack[-1]
+			yaw=self.listener.robot_yaw_stack[-1]
+			curr_x = np.array([loc[0],loc[1],yaw])
 			
-		uhat,_,_ =LQR_for_motion_mimicry(self.all_waypoints,1/self.awake_freq,curr_x,Q=np.eye(3),R=np.eye(2))
-		self.lqr_u=deque(uhat)
-		
+			uhat,_,_ =LQR_for_motion_mimicry(self.all_waypoints,1/self.awake_freq,curr_x,Q=np.eye(3),R=np.eye(2))
+			self.lqr_u=uhat
+			self.curr_lqr_ind=0
 		self.remaining_waypoints=deque([self.all_waypoints[i,:] for i in range(len(self.all_waypoints))])
 
 
 	def get_next_vel(self):
 		vel_msg=stop_twist()
-
 		if self.kernel_algorithm=='LQR':
-			if len(self.lqr_u)>0:
-				vel_msg=self.lqr_u.popleft()
+			if len(self.lqr_u)>0 and self.curr_lqr_ind<len(self.lqr_u):
+				[v,omega]=self.lqr_u[self.curr_lqr_ind]
+				vel_msg=get_twist(v,omega)
+				self.curr_lqr_ind+=1
 		elif self.kernel_algorithm=='TurnAndGo':
 
 			while len(self.remaining_waypoints)>0:	
@@ -89,11 +93,9 @@ class single_robot_controller(object):
 
 		try:
 			while not rospy.is_shutdown():
-				print('single robot:',self.robot_name)
 				if not(self.listener.robot_pose==None):					
 					self.listener.robot_loc_stack.append(toxy(self.listener.robot_pose))
 					self.listener.robot_yaw_stack.append(toyaw(self.listener.robot_pose))
-					print(self.listener.robot_yaw_stack[-1])	
 				
 				if not self.all_waypoints is None:
 					vel_msg=self.get_next_vel()
@@ -110,7 +112,7 @@ class single_robot_controller(object):
 if __name__ == '__main__':
 	arguments = len(sys.argv) - 1
 	
-
+	kernel_algorithm = 'TurnAndGo'
 	if arguments<=0:
 		pose_type_string=prompt_pose_type_string()
 		robot_no=input('The index for this robot is:')
@@ -119,9 +121,11 @@ if __name__ == '__main__':
 			pose_type_string=sys.argv[1]
 		if arguments>=2:
 			robot_no=int(sys.argv[2])
+		if arguments>=3:
+			kernel_algorithm = sys.argv[3]
 
-	
+
 	robot_name='mobile_sensor_{}'.format(robot_no)
 	
-	controller=single_robot_controller(robot_name,pose_type_string,kernel_algorithm='TurnAndGo')	
+	controller=single_robot_controller(robot_name,pose_type_string,kernel_algorithm=kernel_algorithm)	
 	controller.start()

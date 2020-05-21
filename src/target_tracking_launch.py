@@ -10,7 +10,7 @@ import rospkg
 import sys
 
 
-def launch_tracking_suite(pose_type_string,n_robots):
+def launch_tracking_suite(pose_type_string,n_robots,local_track_alg):
 	# Using create a launcher node.
 	rospy.init_node('target_tracking_suite', anonymous=False)
 	uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
@@ -32,7 +32,8 @@ def launch_tracking_suite(pose_type_string,n_robots):
 
 	# Finally, as many single_robot_controller as specified
 	for i in range(n_robots):
-		args=" ".join([pose_type_string,str(i)])
+		
+		args=" ".join([pose_type_string,str(i),local_track_alg])
 		node=roslaunch.core.Node(package='fim_track',node_type='single_robot_controller.py',name='single_robot_controller_{}'.format(i),namespace='/',args=args,output='screen')
 		launch.launch(node)
 
@@ -55,5 +56,12 @@ if __name__ == '__main__':
 			pose_type_string=sys.argv[1]
 		if arguments>=2:
 			n_robots=int(sys.argv[2])
+	
+	local_track_algs = dict()
+	local_track_algs['l']='LQR'
+	local_track_algs['t']='TurnAndGo'
 
-	launch_tracking_suite(pose_type_string,n_robots)
+	resp=input('\n'.join(['Local Tracking Algorithm To Use','l=>LQR','t=>TurnAndGo:']))
+
+
+	launch_tracking_suite(pose_type_string,n_robots,local_track_algs[resp])

@@ -92,5 +92,6 @@ def LQR_for_motion_mimicry(waypoints,wakeup_dt,x_0,Q,R):
         uhat[i,:]=(ref_u[i]+du)
         
         dx = As[i].dot(dx)+Bs[i].dot(du)
-        
+    
+    
     return uhat,xhat,p

@@ -139,10 +139,10 @@ class location_estimation:
 			est_loc=self.localize_target()
 			if not est_loc is None:
 				self.estimated_locs.append(est_loc)
-				print('\n Estimation of target location')
+				# print('\n Estimation of target location')
 				
 				for alg,est in est_loc.items():
-					print('Estimated by {}:{}'.format(alg,est))
+					# print('Estimated by {}:{}'.format(alg,est))
 					
 					out=Float32MultiArray()
 					out.data=est

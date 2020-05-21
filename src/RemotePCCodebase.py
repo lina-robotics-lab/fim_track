@@ -12,6 +12,33 @@ def angle_substract(theta1,theta2):
     else:
         return - (2*np.pi - theta1 + theta2)
 
+
+def get_twist(v,omega):
+    BURGER_MAX_LIN_VEL = 0.22
+    BURGER_MAX_ANG_VEL = 2.84
+
+    def constrain(input, low, high):
+            if input < low:
+              input = low
+            elif input > high:
+              input = high
+            else:
+              input = input
+            return input
+
+    vel_msg=Twist()
+    # Linear velocity in the x-axis.
+    
+    vel_msg.linear.x = constrain(v,-BURGER_MAX_LIN_VEL,BURGER_MAX_LIN_VEL)
+    vel_msg.linear.y = 0
+    vel_msg.linear.z = 0
+
+    # Angular velocity in the z-axis.
+    vel_msg.angular.x = 0
+    vel_msg.angular.y = 0
+    vel_msg.angular.z = constrain(omega,-BURGER_MAX_ANG_VEL,BURGER_MAX_ANG_VEL)
+    return vel_msg
+    
 def stop_twist():
     """
     An all-zero twist.

@@ -97,7 +97,7 @@ if __name__ == '__main__':
 	sensor_poses=[[3,4,-3.04],\
 	[3,3,-3.04],\
 	[3,1,-3.04]]
-	target_poses=[[1,5,3.14/2]]
+	target_poses=[[8,8,3.14/2]]
 
 	noise_level=input('Additive Gaussian Noise Std(a non-negative number):')
 	rospy.set_param('noise_level',float(noise_level))
