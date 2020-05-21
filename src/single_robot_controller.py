@@ -9,7 +9,8 @@ import sys
 from RemotePCCodebase import prompt_pose_type_string,toxy,toyaw,stop_twist
 from robot_listener import robot_listener
 from collections import deque
-from PathTrackingAlgs import TurnAndGo
+from TurnAndGoTracking import TurnAndGo
+from LQRTracking import LQR_for_motion_mimicry
 
 from geometry_msgs.msg import Twist
 
@@ -22,11 +23,11 @@ class single_robot_controller(object):
 
 	 Controller Kernel Algorithm: LQR for waypoint tracking.
 	"""
-	def __init__(self, robot_name,pose_type_string,awake_freq=10,kernal_algorithm='LQR'):
+	def __init__(self, robot_name,pose_type_string,awake_freq=10,kernel_algorithm='LQR'):
 		# Parameters
 		self.robot_name=robot_name
 		self.awake_freq=awake_freq
-		self.kernal_algorithm=kernal_algorithm
+		self.kernel_algorithm=kernel_algorithm
 
 
 		# Data containers
@@ -44,15 +45,24 @@ class single_robot_controller(object):
 
 	def waypoint_callback_(self,data):
 		self.all_waypoints=np.array(data.data).reshape(-1,2)
+		
+		loc=self.listener.robot_loc_stack[-1]
+		yaw=self.listener.robot_yaw_stack[-1]
+		curr_x = np.array([loc[0],loc[1],yaw])
+			
+		uhat,_,_ =LQR_for_motion_mimicry(self.all_waypoints,1/self.awake_freq,curr_x,Q=np.eye(3),R=np.eye(2))
+		self.lqr_u=deque(uhat)
+		
 		self.remaining_waypoints=deque([self.all_waypoints[i,:] for i in range(len(self.all_waypoints))])
-	
+
+
 	def get_next_vel(self):
 		vel_msg=stop_twist()
 
-		if self.kernal_algorithm=='LQR':
+		if self.kernel_algorithm=='LQR':
 			if len(self.lqr_u)>0:
 				vel_msg=self.lqr_u.popleft()
-		elif self.kernal_algorithm=='TurnAndGo':
+		elif self.kernel_algorithm=='TurnAndGo':
 
 			while len(self.remaining_waypoints)>0:	
 				
@@ -72,10 +82,8 @@ class single_robot_controller(object):
 	def update_remaining_waypoints(self):
 		if not (self.remaining_waypoints is None):
 			if len(self.remaining_waypoints)>0:
-				
-				print(self.remaining_waypoints.popleft())
-				print(len(self.remaining_waypoints))
-
+				pass	
+			
 	def start(self):
 		rate=rospy.Rate(self.awake_freq)
 
@@ -115,5 +123,5 @@ if __name__ == '__main__':
 	
 	robot_name='mobile_sensor_{}'.format(robot_no)
 	
-	controller=single_robot_controller(robot_name,pose_type_string,kernal_algorithm='TurnAndGo')	
+	controller=single_robot_controller(robot_name,pose_type_string,kernel_algorithm='TurnAndGo')	
 	controller.start()
