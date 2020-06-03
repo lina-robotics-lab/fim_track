@@ -45,7 +45,7 @@ class single_robot_controller(object):
 		
 
 	def waypoint_callback_(self,data):
-		self.all_waypoints=np.array(data.data).reshape(-1,2)
+		a=self.all_waypoints=np.array(data.data).reshape(-1,2)
 		if self.kernel_algorithm=='LQR':
 			print('waypoints received')
 		

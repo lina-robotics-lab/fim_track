@@ -9,7 +9,7 @@ import sys
 from RemotePCCodebase import prompt_pose_type_string,toxy
 from robot_listener import robot_listener
 
-from dLdp import analytic_dLdp
+from dLdp import analytic_dLdp,dLdp,L
 from FIMPathPlanning import FIM_ascent_path_planning
 
 BURGER_MAX_LIN_VEL = 0.22
@@ -37,7 +37,7 @@ class multi_robot_controller(object):
 		self.robot_names=robot_names
 
 		# Path Planning Parameters
-		self.planning_timesteps = 50
+		self.planning_timesteps = 25
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
 		self.planning_dt = 1
 		self.epsilon=0.5
@@ -125,7 +125,8 @@ class multi_robot_controller(object):
 				else:
 					# Feed in everything needed by the waypoint planner. 
 					# By default we use FIM gradient ascent.
-					df_dLdp=partial(analytic_dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
+					# df_dLdp=partial(analytic_dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
+					df_dLdp=partial(dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
 					self.waypoints=FIM_ascent_path_planning(df_dLdp,q,ps,self.n_robots,self.planning_timesteps,self.max_linear_speed,self.planning_dt,self.epsilon)
 					# print(self.waypoints.shape)
 					self.waypoints=self.waypoints.reshape(-1,self.n_robots,2)

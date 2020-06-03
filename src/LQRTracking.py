@@ -38,6 +38,9 @@ def LQR_for_motion_mimicry(waypoints,wakeup_dt,x_0,Q,R):
     #### Fit spline ########
     if len(waypoints)<=1:
         return [],[],[]
+
+    # Get rid of the waypoints that are left-behind.
+    waypoints = waypoints[np.argmin(np.linalg.norm(waypoints-x_0[:2],axis=1)):]
     p,theta,v,omega,dsdt=scaled_spline_motion(waypoints,wakeup_dt)
 
     ref_x = np.concatenate([p,theta.reshape(-1,1)],axis=1)

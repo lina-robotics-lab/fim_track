@@ -63,7 +63,7 @@ def analytic_dLdp(q,ps,C1s,C0s,ks,bs,sigma=1):
 
 #### Temporaily Freeze the jax-dependent part. The analytic version has less dependency thus more compatibility.###################################################################
 
-'''
+
 from jax import grad,jit, jacfwd
 from matplotlib import pyplot as plt
 import jax.numpy as jnp
@@ -91,31 +91,48 @@ def joint_meas_func(C1s,C0s,ks,bs,q,ps):
     ps=jnp.array(ps)
 
     # Keep in mind that x is a vector of [q,q'], thus only the first half of components are observable.    
+    
     dists=jnp.linalg.norm(q-ps,axis=1)
 
     return single_meas_func(C1s,C0s,ks,bs,dists) 
 
 
-def FIM(q,ps,sigma,C1s,C0s,ks,bs):
+def FIM(q,ps,C1s,C0s,ks,bs,sigma=1):
     """
        The computation of Fish Information Matrix, using definition.
     """
     
     H=partial(joint_meas_func, C1s,C0s,ks,bs)
-    
+    q=q.reshape(ps.shape[1],)
     # Taking partial derivative of H w.r.t. the zeroth argument, which is q.
     dHdq=jit(jacfwd(H,argnums=0))
+    # import pdb
+    # pdb.set_trace()
     return 1/(jnp.power(sigma,2)) *  dHdq(q,ps).T.dot(dHdq(q,ps))
 
-def L(q,ps,sigma,C1s,C0s,ks,bs):
+def L(q,ps,C1s,C0s,ks,bs,sigma=1):
     """
         The reward function big L. It is just det(FIM)
     """
     
-    return jnp.linalg.det(FIM(q,ps,sigma,C1s,C0s,ks,bs))
-def dLdp(q,ps,sigma,C1s,C0s,ks,bs):
+    # return jnp.linalg.det(FIM(q,ps,C1s,C0s,ks,bs,sigma))
+    return -jnp.trace(jnp.linalg.inv(FIM(q,ps,C1s,C0s,ks,bs,sigma)))
+
+def dAinv(inv_A,dAdp):
+    return -inv_A.dot(dAdp.transpose(2,3,0,1).dot(inv_A)).transpose(3,0,1,2)
+
+def dLdp(q,ps,C1s,C0s,ks,bs,sigma=1):
+
     """
         The dLdp caculation using jacfwd.
     """
-    return jit(jacfwd(L,argnums=1))(q,ps,sigma,C1s,C0s,ks,bs)
-'''
+    # return np.array(jit(jacfwd(L,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma))
+   
+    A = FIM(q,ps,C1s,C0s,ks,bs,sigma)
+    inv_A=np.linalg.inv(A)
+    
+    dAdp = np.array(jit(jacfwd(FIM,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma))
+    
+    # print(np.trace(-dAinv(inv_A,dAdp),axis1=0,axis2=1)-np.array(jit(jacfwd(L,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma)))
+    
+    return np.trace(-dAinv(inv_A,dAdp),axis1=0,axis2=1)
