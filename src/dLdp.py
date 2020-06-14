@@ -115,7 +115,7 @@ def L(C1s,C0s,ks,bs,sigma=1):
         The reward function big L. 
     """
     # return jnp.linalg.det(FIM(q,ps,C1s,C0s,ks,bs,sigma))
-    return lambda q,ps:-jnp.trace(jnp.linalg.inv(FIM(q,ps,C1s,C0s,ks,bs,sigma)))
+    return lambda q,ps:jnp.trace(jnp.linalg.inv(FIM(C1s,C0s,ks,bs,sigma)(q,ps)))
 
 def dAinv(inv_A,dAdp):
     # import pdb
@@ -143,4 +143,4 @@ def dLdp(C1s,C0s,ks,bs,sigma=1):
     # print(np.trace(-dAinv(inv_A,dAdp),axis1=0,axis2=1)-np.array(jit(jacfwd(L,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma)))
     
     # Construct dLdP(q,ps)
-    return lambda q,ps: np.array(jnp.trace(-dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1))
+    return lambda q,ps: np.array(jnp.trace(dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1))
