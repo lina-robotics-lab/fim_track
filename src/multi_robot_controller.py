@@ -37,9 +37,9 @@ class multi_robot_controller(object):
 		self.robot_names=robot_names
 
 		# Path Planning Parameters
-		self.planning_timesteps = 25
+		self.planning_timesteps = 50
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
-		self.planning_dt = 1
+		self.planning_dt = 0.1
 		self.epsilon=0.5
 
 		# Data containers
@@ -125,9 +125,9 @@ class multi_robot_controller(object):
 				else:
 					# Feed in everything needed by the waypoint planner. 
 					# By default we use FIM gradient ascent.
-					# df_dLdp=partial(analytic_dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
-					df_dLdp=partial(dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
-					self.waypoints=FIM_ascent_path_planning(df_dLdp,q,ps,self.n_robots,self.planning_timesteps,self.max_linear_speed,self.planning_dt,self.epsilon)
+					# f_dLdp=partial(analytic_dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
+					f_dLdp=dLdp(C1s=C1s,C0s=C0s,ks=ks,bs=bs)
+					self.waypoints=FIM_ascent_path_planning(f_dLdp,q,ps,self.n_robots,self.planning_timesteps,self.max_linear_speed,self.planning_dt,self.epsilon)
 					# print(self.waypoints.shape)
 					self.waypoints=self.waypoints.reshape(-1,self.n_robots,2)
 					

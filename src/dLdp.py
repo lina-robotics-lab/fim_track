@@ -97,42 +97,50 @@ def joint_meas_func(C1s,C0s,ks,bs,q,ps):
     return single_meas_func(C1s,C0s,ks,bs,dists) 
 
 
-def FIM(q,ps,C1s,C0s,ks,bs,sigma=1):
+def FIM(C1s,C0s,ks,bs,sigma=1):
     """
        The computation of Fish Information Matrix, using definition.
     """
     
     H=partial(joint_meas_func, C1s,C0s,ks,bs)
-    q=q.reshape(ps.shape[1],)
+    
     # Taking partial derivative of H w.r.t. the zeroth argument, which is q.
     dHdq=jit(jacfwd(H,argnums=0))
     # import pdb
     # pdb.set_trace()
-    return 1/(jnp.power(sigma,2)) *  dHdq(q,ps).T.dot(dHdq(q,ps))
+    return lambda q,ps:1/(jnp.power(sigma,2)) *  dHdq(q.reshape(ps.shape[1],),ps).T.dot(dHdq(q.reshape(ps.shape[1],),ps))
 
-def L(q,ps,C1s,C0s,ks,bs,sigma=1):
+def L(C1s,C0s,ks,bs,sigma=1):
     """
-        The reward function big L. It is just det(FIM)
+        The reward function big L. 
     """
-    
     # return jnp.linalg.det(FIM(q,ps,C1s,C0s,ks,bs,sigma))
-    return -jnp.trace(jnp.linalg.inv(FIM(q,ps,C1s,C0s,ks,bs,sigma)))
+    return lambda q,ps:-jnp.trace(jnp.linalg.inv(FIM(q,ps,C1s,C0s,ks,bs,sigma)))
 
 def dAinv(inv_A,dAdp):
-    return -inv_A.dot(dAdp.transpose(2,3,0,1).dot(inv_A)).transpose(3,0,1,2)
+    # import pdb
+    # pdb.set_trace()
+    return -inv_A.dot(dAdp.transpose((2,3,0,1)).dot(inv_A)).transpose((3,0,1,2))
 
-def dLdp(q,ps,C1s,C0s,ks,bs,sigma=1):
+def dLdp(C1s,C0s,ks,bs,sigma=1):
 
     """
         The dLdp caculation using jacfwd.
     """
     # return np.array(jit(jacfwd(L,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma))
    
-    A = FIM(q,ps,C1s,C0s,ks,bs,sigma)
-    inv_A=np.linalg.inv(A)
+    # A = FIM(q,ps,C1s,C0s,ks,bs,sigma)
     
-    dAdp = np.array(jit(jacfwd(FIM,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma))
+    # Construct A(q,ps)
+    A = FIM(C1s,C0s,ks,bs,sigma)
+
+    # Construct dAdp(q,ps)
+    dAdp = jit(jacfwd(A,argnums=1))
+    
+    # Construct inv_A(q,ps)
+    inv_A=lambda q,ps: jnp.linalg.inv(A(q,ps))
     
     # print(np.trace(-dAinv(inv_A,dAdp),axis1=0,axis2=1)-np.array(jit(jacfwd(L,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma)))
     
-    return np.trace(-dAinv(inv_A,dAdp),axis1=0,axis2=1)
+    # Construct dLdP(q,ps)
+    return lambda q,ps: np.array(jnp.trace(-dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1))
