@@ -13,6 +13,11 @@ from jax import jacfwd, jit,grad
 '''
 from filterpy.kalman import ExtendedKalmanFilter as EKF
 from functools import partial
+'''
+Use self-built particle filter package
+'''
+import ParticleFilterBasic as PF
+
 
 def single_meas_func(C1,C0,k,b,dist):
 	return k*jnp.power(dist-C1,b)+C0
@@ -75,30 +80,38 @@ class TargetTrackingSS:
 			The jacobian will be automatically calculated as dmeas_func/dx only. 
 	'''
 	def __init__(self, num_sensors,num_targets,meas_func, initial_guess=None, filterType='ekf'):
-		self.num_sensors=num_sensors
-		self.num_targets=num_targets
-		
-		n=2*self.num_targets # For each target, its state is a 4D vector, including its position and the derivative of its position, both in 2D of course.
-		O=jnp.zeros((n,n))
-		I=jnp.eye(n)
-		self.A=jnp.vstack([jnp.hstack([I,I]),jnp.hstack([O,I])])
-		
-		self.meas_func=meas_func
-		
-		self.ps=jnp.zeros((self.num_sensors,2))
-		
-		# Initialize the filter object
-		if filterType=='ekf':
-			self.filter=EKF(dim_x=4*num_targets,dim_z=num_sensors) # For each sensor there will be one scalar reading. So the dimension of output z is num_sensors.
-			self.filter.F=self.A # F is the state transition matrix.
-		else:
-			self.filter=None
-			print('{} is not yet supported'.format(filterType))
+            self.num_sensors=num_sensors
+            self.num_targets=num_targets
+            self.filterType=filterType
 
-		if initial_guess is None:
-			self.filter.x=jnp.zeros(self.num_targets*4)
-		else:
-			self.filter.x=jnp.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
+            n=2*self.num_targets # For each target, its state is a 4D vector, including its position and the derivative of its position, both in 2D of course.
+            O=jnp.zeros((n,n))
+            I=jnp.eye(n)
+            self.A=jnp.vstack([jnp.hstack([I,I]),jnp.hstack([O,I])])
+
+            self.meas_func=meas_func
+
+            self.ps=jnp.zeros((self.num_sensors,2))
+
+            # Initialize the filter object
+            if filterType=='ekf':
+                self.filter=EKF(dim_x=4*num_targets,dim_z=num_sensors) # For each sensor there will be one scalar reading. So the dimension of output z is num_sensors.
+                self.filter.F=self.A # F is the state transition matrix.
+            elif filterType=='pf':
+                self.filter=PF(dim_x=4*num_targets, dim_z=num_sensors, sensor_std = 0.01, move_std = 0.1, N = 1000)
+            else:
+                self.filter=None
+                print('{} is not yet supported'.format(filterType))
+
+            if initial_guess is None:
+                    self.filter.x=jnp.zeros(self.num_targets*4)
+            else:
+                    if filterType=='ekf':
+                            self.filter.x=jnp.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
+                    elif filterType=='pf':
+                            padded = jnp.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
+                            self.filter.init_gaussian(padded, np.ones(dim_x)*0.1)
+
 	
 	def update_and_estimate_loc(self,ps,meas):
 	    
@@ -114,9 +127,16 @@ class TargetTrackingSS:
 		return self.filter.x_prior
 	
 	def update_filters(self,new_ps, new_measurements):
-		self.update_ps_(new_ps)
-		self.filter.update(new_measurements,self.dhxdx,self.hx)
-		self.filter.predict()
+            self.update_ps_(new_ps)
+            #self.filter.update(new_measurements,self.dhxdx,self.hx)
+            if self.filterType=='ekf':
+                self.filter.update(new_measurements,self.dhxdx,self.hx)
+            elif self.filterType=='pf':
+                self.filter.update(new_measurements, new_ps)
+            else:
+                self.filter.update(new_measurements,self.dhxdx,self.hx)
+
+            self.filter.predict()
 	
 	def update_ps_(self,new_ps): 
 		'''

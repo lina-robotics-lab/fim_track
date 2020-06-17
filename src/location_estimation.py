@@ -13,7 +13,7 @@ from robot_listener import robot_listener
 
 
 class location_estimation:
-	def __init__(self,robot_names,pose_type_string,awake_freq=10,qhint=np.array([0,0]),dynamic_filter_type='ekf'):
+	def __init__(self,robot_names,pose_type_string,awake_freq=10,qhint=np.array([8,8]),dynamic_filter_type='ekf'):
 		"""
 			pose_type_string is one in ["turtlesimPose", "Pose", "Odom", "optitrack"]
 		"""
@@ -44,7 +44,7 @@ class location_estimation:
 		
 		# Prepare the publishers of location estimation, one for each estimation algorithm.
 		self.estimation_pub=dict()
-		self.algs=['multi_lateration','intersection','ekf']
+		self.algs=['multi_lateration','intersection','ekf', 'pf']
 		
 		for alg in self.algs:
 			self.estimation_pub[alg]=rospy.Publisher('location_estimation/{}'.format(alg),Float32MultiArray,queue_size=10)
