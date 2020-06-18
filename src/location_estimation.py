@@ -13,7 +13,7 @@ from robot_listener import robot_listener
 
 
 class location_estimation:
-	def __init__(self,robot_names,pose_type_string,awake_freq=10,qhint=np.array([8,8]),dynamic_filter_type='ekf'):
+	def __init__(self,robot_names,pose_type_string,awake_freq=10,qhint=np.array([8,8])):
 		"""
 			pose_type_string is one in ["turtlesimPose", "Pose", "Odom", "optitrack"]
 		"""
@@ -35,16 +35,17 @@ class location_estimation:
 
 		self.qhint=qhint
 
-		self.dynamic_filter=None
-		self.dynamic_filter_type=dynamic_filter_type
-			
 		if target_name!=None:
 			rospy.Subscriber('/vrpn_client_node/{}/pose'.format(target_name),PoseStamped,self.target_pose_callback_)
 
 		
 		# Prepare the publishers of location estimation, one for each estimation algorithm.
 		self.estimation_pub=dict()
-		self.algs=['multi_lateration','intersection','ekf', 'pf']
+		self.dynamic_filter_algs = ['ekf','pf']
+		self.dynamic_filters=dict({alg:None for alg in self.dynamic_filter_algs})
+
+		self.algs=['multi_lateration','intersection']
+		self.algs.extend(self.dynamic_filter_algs)
 		
 		for alg in self.algs:
 			self.estimation_pub[alg]=rospy.Publisher('location_estimation/{}'.format(alg),Float32MultiArray,queue_size=10)
@@ -87,8 +88,11 @@ class location_estimation:
 			estimates=dict()
 			estimates['multi_lateration']=multi_lateration_from_rhat(np.vstack(sensor_locs),np.hstack(rhats).ravel())
 			estimates['intersection']=intersection_localization(np.vstack(sensor_locs),np.hstack(rhats).ravel(),self.qhint)
-			if not self.dynamic_filter is None:
-				estimates['ekf']=self.dynamic_filter.update_and_estimate_loc(np.array(latest_sensor_locs),np.array(latest_scalar_readings))
+			
+			for key,dynamic_filter in self.dynamic_filters.items():
+				if not dynamic_filter is None:
+					estimates[key]=dynamic_filter.update_and_estimate_loc(np.array(latest_sensor_locs),np.array(latest_scalar_readings))
+
 			return estimates
 		else:
 			return None
@@ -102,25 +106,26 @@ class location_estimation:
 		
 		rate=rospy.Rate(self.awake_freq)
 
-		while (not rospy.is_shutdown()):
-
-			# Initialize the dynamic filter if it is not yet done.
-			if self.dynamic_filter is None:
-				C1s=[]
-				C0s=[]
-				ks=[]
-				bs=[]
-				for l in self.listeners:
-					C1s.append(l.C1)
-					C0s.append(l.C0)
-					ks.append(l.k)
-					bs.append(l.b)
-
-				NUM_TARGET=1
+		NUM_TARGET=1
 				
-				self.dynamic_filter=getDynamicFilter(self.n_robots,NUM_TARGET,C1s,C0s,ks,bs,initial_guess=self.qhint)
-				if not self.dynamic_filter is None:
-					print('dynamic_filter initialized')
+
+		while (not rospy.is_shutdown()):
+			# Initialize the dynamic filter if it is not yet done.
+			for filter_alg in self.dynamic_filter_algs:
+				if self.dynamic_filters[filter_alg] is None:
+					C1s=[]
+					C0s=[]
+					ks=[]
+					bs=[]
+					for l in self.listeners:
+						C1s.append(l.C1)
+						C0s.append(l.C0)
+						ks.append(l.k)
+						bs.append(l.b)
+					
+					self.dynamic_filters[filter_alg]=getDynamicFilter(self.n_robots,NUM_TARGET,C1s,C0s,ks,bs,initial_guess=self.qhint,filterType=filter_alg)
+					if not self.dynamic_filters[filter_alg] is None:
+						print('{} initialized'.format(filter_alg))
 
 
 			# Gather the latest readings from listeners

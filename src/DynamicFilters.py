@@ -5,6 +5,7 @@ jax wraps all the numpy functions to be ready for auto-differentiation, and pack
 
 Every function written using the jnp wrappers can be differentiated using the grad or jac function.
 '''
+import numpy as np
 import jax.numpy as jnp
 from jax import jacfwd, jit,grad
 
@@ -16,7 +17,7 @@ from functools import partial
 '''
 Use self-built particle filter package
 '''
-import ParticleFilterBasic as PF
+from ParticleFilterBasic import ParticleFilterBasic as PF
 
 
 def single_meas_func(C1,C0,k,b,dist):
@@ -38,7 +39,7 @@ def joint_meas_func(C1s,C0s,ks,bs,x,ps):
 
 	return single_meas_func(C1s,C0s,ks,bs,dists) 
 	
-def getDynamicFilter(num_sensors,num_targets,C1s,C0s,ks,bs,initial_guess=None):
+def getDynamicFilter(num_sensors,num_targets,C1s,C0s,ks,bs,initial_guess=None,filterType='ekf'):
 	"""
 		We assume the coefficients for each mobile sensors can be different, so the
 		coefs passed in are in plural form.
@@ -49,7 +50,7 @@ def getDynamicFilter(num_sensors,num_targets,C1s,C0s,ks,bs,initial_guess=None):
 
 
 	meas_func=partial(joint_meas_func,C1s,C0s,ks,bs)# Freeze the coefficients, the signature becomes meas_func(x,ps)
-	return TargetTrackingSS(num_sensors,num_targets,meas_func,initial_guess=initial_guess)
+	return TargetTrackingSS(num_sensors,num_targets,meas_func,initial_guess=initial_guess,filterType=filterType)
 
 
 class TargetTrackingSS:
@@ -85,13 +86,13 @@ class TargetTrackingSS:
             self.filterType=filterType
 
             n=2*self.num_targets # For each target, its state is a 4D vector, including its position and the derivative of its position, both in 2D of course.
-            O=jnp.zeros((n,n))
-            I=jnp.eye(n)
-            self.A=jnp.vstack([jnp.hstack([I,I]),jnp.hstack([O,I])])
+            O=np.zeros((n,n))
+            I=np.eye(n)
+            self.A=np.vstack([np.hstack([I,I]),np.hstack([O,I])])
 
             self.meas_func=meas_func
 
-            self.ps=jnp.zeros((self.num_sensors,2))
+            self.ps=np.zeros((self.num_sensors,2))
 
             # Initialize the filter object
             if filterType=='ekf':
@@ -104,13 +105,13 @@ class TargetTrackingSS:
                 print('{} is not yet supported'.format(filterType))
 
             if initial_guess is None:
-                    self.filter.x=jnp.zeros(self.num_targets*4)
+                    self.filter.x=np.zeros(self.num_targets*4)
             else:
                     if filterType=='ekf':
-                            self.filter.x=jnp.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
+                            self.filter.x=np.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
                     elif filterType=='pf':
-                            padded = jnp.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
-                            self.filter.init_gaussian(padded, np.ones(dim_x)*0.1)
+                            padded = np.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
+                            self.filter.init_gaussian(padded, np.ones(4*num_targets)*0.1)
 
 	
 	def update_and_estimate_loc(self,ps,meas):

@@ -143,4 +143,4 @@ def dLdp(C1s,C0s,ks,bs,sigma=1):
     # print(np.trace(-dAinv(inv_A,dAdp),axis1=0,axis2=1)-np.array(jit(jacfwd(L,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma)))
     
     # Construct dLdP(q,ps)
-    return lambda q,ps: np.array(jnp.trace(dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1))
+    return lambda q,ps: -np.array(jnp.trace(dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1))

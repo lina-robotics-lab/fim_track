@@ -39,7 +39,7 @@ class multi_robot_controller(object):
 		# Path Planning Parameters
 		self.planning_timesteps = 50
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
-		self.planning_dt = 0.1
+		self.planning_dt = 1
 		self.epsilon=0.5
 
 		# Data containers
@@ -54,7 +54,7 @@ class multi_robot_controller(object):
 
 		# Estimated location subscribers
 		self.est_loc_sub=dict()
-		self.est_algs=['multi_lateration','intersection','ekf']
+		self.est_algs=['multi_lateration','intersection','ekf','pf']
 		for alg in self.est_algs:
 			self.est_loc_sub[alg]=rospy.Subscriber('/location_estimation/{}'.format(alg),Float32MultiArray, partial(self.est_loc_callback_,alg=alg))
 
@@ -79,7 +79,9 @@ class multi_robot_controller(object):
 			# indx=np.argmin(np.linalg.norm(candidates-anchor,axis=1))
 			# print('Candidate coord:',candidates[indx,:])
 			# return candidates[indx,:]
-			return self.curr_est_locs['ekf']
+			# return self.curr_est_locs['ekf']
+
+			return self.curr_est_locs['pf']
 		else:
 			return None
 
