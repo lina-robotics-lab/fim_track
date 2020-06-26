@@ -26,7 +26,7 @@ class ParticleFilterBasic:
 
     '''
 
-    def __init__(self, dim_x, dim_z, sensor_std=0.01, move_std=0.1, N = 1000):
+    def __init__(self, dim_x, dim_z, sensor_std=0.01, move_std=0.1, N = 50):
 
         self.dim_x = dim_x
         self.dim_z = dim_z
@@ -52,16 +52,21 @@ class ParticleFilterBasic:
         self.particles = mean + np.random.randn(self.N, self.dim_x) * std
         self.x = np.average(self.particles, axis=0, weights=self.weights)
 
-    def update(self, new_meas, new_ps):
+    def update(self, new_meas,new_ps, meas_func):
         '''
         Take in measurements, weight and resample particles - update x_post - update velocities
         '''
         # assume x_prior has the raw no measurement average of particles
         
         # weight - location update
-        for i in range(new_ps.shape[0]):
-            distance = np.linalg.norm(self.particles[:, 0:int(self.dim_x / 2)] - new_ps[i], axis=1)
-            self.weights = self.weights * stats.norm(distance, self.sensor_std).pdf(new_meas[i])
+        # import pdb
+        # pdb.set_trace()
+        # for i in range(self.N):
+        import pdb
+        
+        meas_predict = np.apply_along_axis(meas_func,1,self.particles)
+        pdf = lambda predict:stats.multivariate_normal(predict,self.sensor_std).pdf(new_meas)
+        self.weights = np.apply_along_axis(pdf,1,meas_predict)
 
         self.weights += 1.e-300      # avoid round-off to zero
         self.weights /= sum(self.weights) # normalize

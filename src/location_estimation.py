@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 from geometry_msgs.msg import PoseStamped,Pose, Twist
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray,Bool
 from turtlesim.msg import Pose as tPose
 from nav_msgs.msg import Odometry
 
@@ -13,7 +13,7 @@ from robot_listener import robot_listener
 
 
 class location_estimation:
-	def __init__(self,robot_names,pose_type_string,awake_freq=10,qhint=np.array([8,8])):
+	def __init__(self,robot_names,pose_type_string,awake_freq=10,qhint=None):
 		"""
 			pose_type_string is one in ["turtlesimPose", "Pose", "Odom", "optitrack"]
 		"""
@@ -38,6 +38,8 @@ class location_estimation:
 		if target_name!=None:
 			rospy.Subscriber('/vrpn_client_node/{}/pose'.format(target_name),PoseStamped,self.target_pose_callback_)
 
+		self.initial_movement_finished=False
+		rospy.Subscriber('/multi_robot_controller/initial_movement_finished',Bool,self.initial_movement_callback_)
 		
 		# Prepare the publishers of location estimation, one for each estimation algorithm.
 		self.estimation_pub=dict()
@@ -87,7 +89,8 @@ class location_estimation:
 		if len(rhats)>0:
 			estimates=dict()
 			estimates['multi_lateration']=multi_lateration_from_rhat(np.vstack(sensor_locs),np.hstack(rhats).ravel())
-			estimates['intersection']=intersection_localization(np.vstack(sensor_locs),np.hstack(rhats).ravel(),self.qhint)
+			if not self.qhint is None:
+				estimates['intersection']=intersection_localization(np.vstack(sensor_locs),np.hstack(rhats).ravel(),self.qhint)
 			
 			for key,dynamic_filter in self.dynamic_filters.items():
 				if not dynamic_filter is None:
@@ -96,10 +99,28 @@ class location_estimation:
 			return estimates
 		else:
 			return None
+	def get_default_est_loc(self,curr_est_locs):
+		"""
+			We will use a heuristic way to determine the estimated location based on the prediction from three candidate algorithms
+		"""
+		keys = curr_est_locs.keys()
+		
+		if 'ekf' in keys: 
+			return curr_est_locs['ekf']
+		elif 'pf' in keys:
+			return curr_est_locs['pf']
+		elif 'multi_lateration' in keys:
+			return curr_est_locs['multi_lateration']
+		elif 'intersection' in keys:
+			return curr_est_locs['intersection']
+		else:
+			return None
 
+	def initial_movement_callback_(self,finished):
+		self.initial_movement_finished = finished.data
 	def target_pose_callback_(self,data):
 		# print(data)
-		self.target_pose=data
+		self.target_pose=data.data
 
 	def start(self,target_name=None,save_data=False,trail_num=0):
 		
@@ -110,23 +131,7 @@ class location_estimation:
 				
 
 		while (not rospy.is_shutdown()):
-			# Initialize the dynamic filter if it is not yet done.
-			for filter_alg in self.dynamic_filter_algs:
-				if self.dynamic_filters[filter_alg] is None:
-					C1s=[]
-					C0s=[]
-					ks=[]
-					bs=[]
-					for l in self.listeners:
-						C1s.append(l.C1)
-						C0s.append(l.C0)
-						ks.append(l.k)
-						bs.append(l.b)
-					
-					self.dynamic_filters[filter_alg]=getDynamicFilter(self.n_robots,NUM_TARGET,C1s,C0s,ks,bs,initial_guess=self.qhint,filterType=filter_alg)
-					if not self.dynamic_filters[filter_alg] is None:
-						print('{} initialized'.format(filter_alg))
-
+			
 
 			# Gather the latest readings from listeners
 			for l in self.listeners:
@@ -142,7 +147,34 @@ class location_estimation:
 			Should be called after the location & light reading update is done.
 			'''
 			est_loc=self.localize_target()
+
 			if not est_loc is None:
+
+				# Initialize the dynamic filter if the initial movements from the sensors are finished.
+				if self.initial_movement_finished:
+					for filter_alg in self.dynamic_filter_algs:
+						if self.dynamic_filters[filter_alg] is None:
+							C1s=[]
+							C0s=[]
+							ks=[]
+							bs=[]
+							for l in self.listeners:
+								C1s.append(l.C1)
+								C0s.append(l.C0)
+								ks.append(l.k)
+								bs.append(l.b)					
+							
+							# Set the initial guess of the dynamic filter to be the current est_loc.
+							# It comes from multi-lateration or intersection method.
+							# initial_guess = self.get_default_est_loc(est_loc)
+							initial_guess = est_loc['multi_lateration'].reshape(2,)
+
+							self.dynamic_filters[filter_alg]=getDynamicFilter(self.n_robots,NUM_TARGET,C1s,C0s,ks,bs,initial_guess=initial_guess,filterType=filter_alg)
+							if not self.dynamic_filters[filter_alg] is None:
+								print('{} initialized'.format(filter_alg))
+								# print('initial_movement_finished',self.initial_movement_finished)
+
+
 				self.estimated_locs.append(est_loc)
 				# print('\n Estimation of target location')
 				
@@ -188,7 +220,8 @@ if __name__=='__main__':
 	target_name=None
 
 	
-	qhint=np.array([6.0,6.0])
+	qhint=np.array([0.0,0.0])
+	# qhint=None
 	
 	le=location_estimation(robot_names,pose_type_string,qhint=qhint)
 	le.start(target_name=target_name,trail_num=7)

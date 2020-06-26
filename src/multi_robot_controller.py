@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 from geometry_msgs.msg import PoseStamped,Pose, Twist
-from std_msgs.msg import Float32MultiArray,MultiArrayLayout
+from std_msgs.msg import Float32MultiArray,MultiArrayLayout,Bool
 import numpy as np
 from functools import partial
 import sys
@@ -11,6 +11,7 @@ from robot_listener import robot_listener
 
 from dLdp import analytic_dLdp,dLdp,L
 from FIMPathPlanning import FIM_ascent_path_planning
+from ConcentricPathPlanning import concentric_path_planning
 
 BURGER_MAX_LIN_VEL = 0.22
 
@@ -30,13 +31,15 @@ class multi_robot_controller(object):
 		The single_robot_sensors will do their job to track the waypoints. This is in fact implementing an MPC algorithm. 
 
 	"""
-	def __init__(self, robot_names,pose_type_string,awake_freq=2):
+	def __init__(self, robot_names,pose_type_string,awake_freq=2,initial_movement_radius=1.5):
 		self.robot_names=robot_names
 		self.awake_freq=awake_freq
 		self.n_robots=len(robot_names)
 		self.robot_names=robot_names
 
 		# Path Planning Parameters
+		self.initial_movement_finished = False
+		self.initial_movement_radius = initial_movement_radius
 		self.planning_timesteps = 50
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
 		self.planning_dt = 1
@@ -55,6 +58,8 @@ class multi_robot_controller(object):
 		# Estimated location subscribers
 		self.est_loc_sub=dict()
 		self.est_algs=['multi_lateration','intersection','ekf','pf']
+		# self.est_algs=['pf']
+		
 		for alg in self.est_algs:
 			self.est_loc_sub[alg]=rospy.Subscriber('/location_estimation/{}'.format(alg),Float32MultiArray, partial(self.est_loc_callback_,alg=alg))
 
@@ -63,6 +68,8 @@ class multi_robot_controller(object):
 		for name in self.robot_names:
 			self.waypoint_pub[name]=rospy.Publisher('/{}/waypoints'.format(name),Float32MultiArray,queue_size=10)
 
+		# The status flag indicating whether initial movement is over.
+		self.initial_movement_pub = rospy.Publisher('/multi_robot_controller/initial_movement_finished',Bool,queue_size=10)
 		
 	def est_loc_callback_(self,data,alg):
 		self.curr_est_locs[alg]=np.array(data.data)
@@ -72,16 +79,15 @@ class multi_robot_controller(object):
 			We will use a heuristic way to determine the estimated location based on the prediction from three candidate algorithms
 		"""
 		keys=self.curr_est_locs.keys()
-		if len(keys)>=3: 
-			# anchor=self.curr_est_locs['intersection'].reshape(-1,2)
-			
-			# candidates=np.array([self.curr_est_locs['multi_lateration'],self.curr_est_locs['ekf']]).reshape(-1,2)
-			# indx=np.argmin(np.linalg.norm(candidates-anchor,axis=1))
-			# print('Candidate coord:',candidates[indx,:])
-			# return candidates[indx,:]
-			# return self.curr_est_locs['ekf']
-
+		print(self.curr_est_locs)
+		if 'ekf' in keys: 
+			return self.curr_est_locs['ekf']
+		elif 'pf' in keys:
 			return self.curr_est_locs['pf']
+		elif 'multi_lateration' in keys:
+			return self.curr_est_locs['multi_lateration']
+		elif 'intersection' in keys:
+			return self.curr_est_locs['intersection']
 		else:
 			return None
 
@@ -89,14 +95,22 @@ class multi_robot_controller(object):
 		rate=rospy.Rate(self.awake_freq)
 
 		while (not rospy.is_shutdown()):
+
+			rate.sleep()
 			print('real_time_controlling')
 
 			# Update the robot pose informations.
 
+			all_loc_received = True
 			for l in self.listeners:
 				if not(l.robot_pose==None):					
 					l.robot_loc_stack.append(toxy(l.robot_pose))
+				else:
+					all_loc_received = False
 					# print(l.robot_name,l.robot_loc_stack[-1])
+			if not all_loc_received:
+				continue
+
 			for alg, est in self.curr_est_locs.items():
 				# print(alg,est)
 				pass
@@ -111,7 +125,10 @@ class multi_robot_controller(object):
 			else:
 
 				q=q.reshape(-1,2) # By default, this is using the estimation returned by ekf.
+
 				ps=np.array([l.robot_loc_stack[-1] for l in self.listeners]).reshape(-1,2)
+
+				print(ps)
 
 				C1s=[]
 				C0s=[]
@@ -125,12 +142,26 @@ class multi_robot_controller(object):
 				if None in C1s or None in C0s or None in ks or None in bs:
 					print('Coefficients not fully yet received.')
 				else:
-					# Feed in everything needed by the waypoint planner. 
-					# By default we use FIM gradient ascent.
-					# f_dLdp=partial(analytic_dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
-					f_dLdp=dLdp(C1s=C1s,C0s=C0s,ks=ks,bs=bs)
-					self.waypoints=FIM_ascent_path_planning(f_dLdp,q,ps,self.n_robots,self.planning_timesteps,self.max_linear_speed,self.planning_dt,self.epsilon)
-					# print(self.waypoints.shape)
+					if not self.initial_movement_finished:		
+						print('Performing Initial Movements')																								# R,ps,n_p,n_steps,max_linear_speed,dt,epsilon
+						self.waypoints,self.initial_movement_finished = concentric_path_planning(\
+																		self.initial_movement_radius,ps,self.n_robots,\
+																		self.planning_timesteps,self.max_linear_speed,\
+																		self.planning_dt)
+					else:
+						print('Dynamic Tracking')
+						# Feed in everything needed by the waypoint planner. 
+						# After the initial movement is completed, we switch to FIM gradient ascent.
+						# f_dLdp=partial(analytic_dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
+						f_dLdp=dLdp(C1s=C1s,C0s=C0s,ks=ks,bs=bs)
+						self.waypoints=FIM_ascent_path_planning(f_dLdp,q,ps,self.n_robots,self.planning_timesteps,self.max_linear_speed,self.planning_dt,self.epsilon)
+					
+					# self.waypoints.shape should be (n_waypoints,n_sensors,space_dim)
+					# For example, (31,3,2)
+					self.initial_movement_pub.publish(self.initial_movement_finished)
+					# print(self.initial_movement_finished)
+					# print(self.waypoints.shape,self.initial_movement_finished)
+
 					self.waypoints=self.waypoints.reshape(-1,self.n_robots,2)
 					
 
@@ -143,7 +174,6 @@ class multi_robot_controller(object):
 						To do: implement the single robot controllers, and feed them with the waypoints!
 					"""
 
-			rate.sleep()
 
 		
 		

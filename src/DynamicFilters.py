@@ -98,8 +98,10 @@ class TargetTrackingSS:
             if filterType=='ekf':
                 self.filter=EKF(dim_x=4*num_targets,dim_z=num_sensors) # For each sensor there will be one scalar reading. So the dimension of output z is num_sensors.
                 self.filter.F=self.A # F is the state transition matrix.
+                # self.filter.Q = np.eye(4*num_targets) * 1 # Process noise matrix
+                # self.filter.R = np.eye(num_sensors) * 1 # Measurement noise matrix
             elif filterType=='pf':
-                self.filter=PF(dim_x=4*num_targets, dim_z=num_sensors, sensor_std = 0.01, move_std = 0.1, N = 1000)
+                self.filter=PF(dim_x=4*num_targets, dim_z=num_sensors, sensor_std = 0.5, move_std = 0.1, N = 50)
             else:
                 self.filter=None
                 print('{} is not yet supported'.format(filterType))
@@ -111,7 +113,7 @@ class TargetTrackingSS:
                             self.filter.x=np.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
                     elif filterType=='pf':
                             padded = np.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
-                            self.filter.init_gaussian(padded, np.ones(4*num_targets)*0.1)
+                            self.filter.init_gaussian(padded, np.ones(4*num_targets)*10)
 
 	
 	def update_and_estimate_loc(self,ps,meas):
@@ -133,7 +135,7 @@ class TargetTrackingSS:
             if self.filterType=='ekf':
                 self.filter.update(new_measurements,self.dhxdx,self.hx)
             elif self.filterType=='pf':
-                self.filter.update(new_measurements, new_ps)
+                self.filter.update(new_measurements,new_ps, self.hx)
             else:
                 self.filter.update(new_measurements,self.dhxdx,self.hx)
 

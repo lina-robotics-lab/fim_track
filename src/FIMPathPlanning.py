@@ -42,11 +42,13 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
         grad=f_dLdp(q,ps)
         grad=grad.reshape(-1,2)
         grad_sizes=np.linalg.norm(grad,axis=1)
+        # print(ps,q)
         print("grad_sizes",grad_sizes)
+
         grad_sizes[grad_sizes==0]=1 # Handle the case where the partial derivative is zero.
 
         update_steps=(grad.T/grad_sizes * step_size).T # Calculate the update steps to be applied to ps
-
+# 
         candid_ps=ps+update_steps # Calculate the direct update before projecting onto the target sphere.
 
         # Project candid_ps onto the "surveillance circle" once it steps into it
