@@ -143,4 +143,19 @@ def dLdp(C1s,C0s,ks,bs,sigma=1):
     # print(np.trace(-dAinv(inv_A,dAdp),axis1=0,axis2=1)-np.array(jit(jacfwd(L,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma)))
     
     # Construct dLdP(q,ps)
+
     return lambda q,ps: -np.array(jnp.trace(dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1))
+def dSdp(C1s,C0s,ks,bs,sigma=1):
+
+    """
+        S = L^1/b
+        dSdp = 1/b * L^(1/b-1) * dLdp
+    """
+    bs = np.array(bs)
+    dL = dLdp(C1s,C0s,ks,bs,sigma)
+    f_L = L(C1s,C0s,ks,bs,sigma)
+
+    # import pdb
+    
+    # pdb.set_trace()
+    return lambda q,ps: np.abs((1/bs * f_L(q,ps)**(1/bs-1)).reshape(len(bs),1)) * dL(q,ps)

@@ -43,7 +43,7 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
         grad=grad.reshape(-1,2)
         grad_sizes=np.linalg.norm(grad,axis=1)
         # print(ps,q)
-        print("grad_sizes",grad_sizes)
+        # print("grad_sizes",grad_sizes)
 
         grad_sizes[grad_sizes==0]=1 # Handle the case where the partial derivative is zero.
 

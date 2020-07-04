@@ -16,7 +16,7 @@ def concentric_path_planning(R,ps,n_p,n_steps,max_linear_speed,dt):
 
 	destinations = CoM + R * np.array([[np.cos(phi*j),np.sin(phi*j)] for j in range(n_p)])
 
-	reached = np.all(np.linalg.norm(ps-CoM,axis=1)>=R)
+	reached = np.any(np.linalg.norm(ps-CoM,axis=1)>=R)
 
 	dists = np.repeat(step_size* np.arange(n_steps+1),n_p).reshape(-1,n_p)
 	

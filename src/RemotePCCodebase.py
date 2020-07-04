@@ -1,8 +1,21 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
-from geometry_msgs.msg import Pose,Twist
+from geometry_msgs.msg import Pose,Twist,PoseStamped
 from turtlesim.msg import Pose as tPose
 from nav_msgs.msg import Odometry
+import rospy
+import re
+
+def get_sensor_names():
+    sensor_names = []
+    for topic in rospy.get_published_topics():
+            topic_split = re.split('/',topic[0])
+            if ('pose' in topic_split) or ('odom' in topic_split):
+                pose_type_string = topic[1]
+                name = re.search('/mobile_sensor.*/',topic[0])
+                if not name is None:
+                    sensor_names.append(name.group()[1:-1])
+    return sensor_names
 
 def angle_substract(theta1,theta2):
     # Return the most efficient substraction of theta1-theta2.
@@ -73,6 +86,8 @@ def toyaw(pose):
         return tPose2yaw(pose)
     elif type(pose) is Odometry:
         return yaw_from_odom(pose)
+    elif type(pose) is PoseStamped:
+        return posestmp2yaw(pose)
     else:
         print('Pose to yaw conversion is not yet handled for {}'.format(type(pose)))
         return None
@@ -84,6 +99,8 @@ def toxy(pose):
         return xy_from_odom(pose)
     elif type(pose) is Pose:
         return pose2xz(pose)
+    elif type(pose) is PoseStamped:
+        return posestmp2xy(pose)
     else:
         print('Pose to xy conversion is not yet handled for {}'.format(type(pose)))
         return None
@@ -134,7 +151,13 @@ def yaw_from_odom(odom):
     return quaternion2yaw(odom.pose.pose.orientation)
 def xy_from_odom(odom):
     return np.array([odom.pose.pose.position.x,odom.pose.pose.position.y])
-
+"""
+The following converts PoseStampe data to x,z and yaw
+"""
+def posestmp2xy(pose):
+    return np.array([pose.pose.position.x,pose.pose.position.y])
+def posestmp2yaw(pose):
+    return quaternion2yaw(pose.pose.orientation)
 
 def top_n_mean(readings,n):
     """

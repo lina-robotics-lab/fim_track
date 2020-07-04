@@ -6,10 +6,10 @@ import numpy as np
 from functools import partial
 import sys
 
-from RemotePCCodebase import prompt_pose_type_string,toxy
+from RemotePCCodebase import prompt_pose_type_string,toxy,get_sensor_names
 from robot_listener import robot_listener
 
-from dLdp import analytic_dLdp,dLdp,L
+from dLdp import analytic_dLdp,dLdp,L,dSdp
 from FIMPathPlanning import FIM_ascent_path_planning
 from ConcentricPathPlanning import concentric_path_planning
 
@@ -79,7 +79,7 @@ class multi_robot_controller(object):
 			We will use a heuristic way to determine the estimated location based on the prediction from three candidate algorithms
 		"""
 		keys=self.curr_est_locs.keys()
-		print(self.curr_est_locs)
+		print('Current Target Location Estimates:',self.curr_est_locs)
 		if 'ekf' in keys: 
 			return self.curr_est_locs['ekf']
 		elif 'pf' in keys:
@@ -105,15 +105,18 @@ class multi_robot_controller(object):
 			for l in self.listeners:
 				if not(l.robot_pose==None):					
 					l.robot_loc_stack.append(toxy(l.robot_pose))
+					print('Robotname:',l.robot_name,l.robot_loc_stack[-1])
 				else:
 					all_loc_received = False
 					# print(l.robot_name,l.robot_loc_stack[-1])
+			print(all_loc_received)
+			
 			if not all_loc_received:
 				continue
-
 			for alg, est in self.curr_est_locs.items():
 				# print(alg,est)
 				pass
+
 
 			
 			# Start generating waypoints.
@@ -128,7 +131,6 @@ class multi_robot_controller(object):
 
 				ps=np.array([l.robot_loc_stack[-1] for l in self.listeners]).reshape(-1,2)
 
-				print(ps)
 
 				C1s=[]
 				C0s=[]
@@ -152,8 +154,13 @@ class multi_robot_controller(object):
 						print('Dynamic Tracking')
 						# Feed in everything needed by the waypoint planner. 
 						# After the initial movement is completed, we switch to FIM gradient ascent.
+						
 						# f_dLdp=partial(analytic_dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
+						
 						f_dLdp=dLdp(C1s=C1s,C0s=C0s,ks=ks,bs=bs)
+						
+						# f_dLdp=dSdp(C1s=C1s,C0s=C0s,ks=ks,bs=bs)
+						
 						self.waypoints=FIM_ascent_path_planning(f_dLdp,q,ps,self.n_robots,self.planning_timesteps,self.max_linear_speed,self.planning_dt,self.epsilon)
 					
 					# self.waypoints.shape should be (n_waypoints,n_sensors,space_dim)
@@ -184,14 +191,12 @@ if __name__ == '__main__':
 
 	if arguments<=0:
 		pose_type_string=prompt_pose_type_string()
-		n_robots=int(input('The number of mobile sensors:'))
 	else:
 		if arguments>=1:
 			pose_type_string=sys.argv[1]
-		if arguments>=2:
-			n_robots=int(sys.argv[2])
-			
-	robot_names=['mobile_sensor_{}'.format(i) for i in range(n_robots)]
-
+		
+	robot_names=get_sensor_names()		
+	n_robots = len(robot_names)
+	
 	mlt_controller=multi_robot_controller(robot_names,pose_type_string)	
 	mlt_controller.start()

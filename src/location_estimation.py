@@ -83,7 +83,8 @@ class location_estimation:
 				latest_scalar_readings.append(meas[-1])
 				latest_sensor_locs.append(loc[-1,:])
 			else:
-				print(l.robot_name,l.k,len(l.light_reading_stack))
+				pass
+				# print(l.robot_name,l.k,len(l.light_reading_stack))
 				# print(l.robot_name,rh[0])	
 		# print('rh',rhats)
 		if len(rhats)>0:
@@ -207,15 +208,13 @@ if __name__=='__main__':
 
 	if arguments<=0:
 		pose_type_string=prompt_pose_type_string()
-		n_robots=int(input('The number of mobile sensors:'))
 	else:
 		if arguments>=1:
 			pose_type_string=sys.argv[1]
-		if arguments>=2:
-			n_robots=int(sys.argv[2])
-			
-	robot_names=['mobile_sensor_{}'.format(i) for i in range(n_robots)]
-
+		
+	robot_names=get_sensor_names()		
+	n_robots = len(robot_names)
+	
 	# target_name='target_0'
 	target_name=None
 
