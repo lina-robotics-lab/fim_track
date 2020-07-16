@@ -42,6 +42,8 @@ class single_robot_controller(object):
 		self.waypoint_sub=rospy.Subscriber('/{}/waypoints'.format(self.robot_name),Float32MultiArray,self.waypoint_callback_)
 		self.vel_pub=rospy.Publisher('/{}/cmd_vel'.format(self.robot_name),Twist,queue_size=10)
 		
+		self.Q_strength=1
+		self.R_strength=1
 		
 
 	def waypoint_callback_(self,data):
@@ -53,7 +55,7 @@ class single_robot_controller(object):
 			yaw=self.listener.robot_yaw_stack[-1]
 			curr_x = np.array([loc[0],loc[1],yaw])
 			
-			uhat,_,_ =LQR_for_motion_mimicry(self.all_waypoints,1/self.awake_freq,curr_x,Q=np.eye(3),R=np.eye(2))
+			uhat,_,_ =LQR_for_motion_mimicry(self.all_waypoints,1/self.awake_freq,curr_x,Q=np.eye(3)*self.Q_strength,R=np.eye(2)*self.R_strength)
 			self.lqr_u=uhat
 			self.curr_lqr_ind=0
 		self.remaining_waypoints=deque([self.all_waypoints[i,:] for i in range(len(self.all_waypoints))])
@@ -100,11 +102,12 @@ class single_robot_controller(object):
 				if not self.all_waypoints is None:
 					vel_msg=self.get_next_vel()
 					self.vel_pub.publish(vel_msg)
-								
+				# print("{} moving".format(self.robot_name))				
 				rate.sleep()
 		except:
 			pass
 		finally:
+			print("{} Stoping".format(self.robot_name))
 			self.vel_pub.publish(stop_twist())
 	
 		
@@ -120,12 +123,10 @@ if __name__ == '__main__':
 		if arguments>=1:
 			pose_type_string=sys.argv[1]
 		if arguments>=2:
-			robot_no=int(sys.argv[2])
+			robot_name=sys.argv[2]
 		if arguments>=3:
 			kernel_algorithm = sys.argv[3]
 
 
-	robot_name='mobile_sensor_{}'.format(robot_no)
-	
 	controller=single_robot_controller(robot_name,pose_type_string,kernel_algorithm=kernel_algorithm)	
 	controller.start()

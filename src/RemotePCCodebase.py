@@ -7,15 +7,15 @@ import rospy
 import re
 
 def get_sensor_names():
-    sensor_names = []
+    sensor_names = set()
     for topic in rospy.get_published_topics():
             topic_split = re.split('/',topic[0])
             if ('pose' in topic_split) or ('odom' in topic_split):
-                pose_type_string = topic[1]
+                # pose_type_string = topic[1]
                 name = re.search('/mobile_sensor.*/',topic[0])
                 if not name is None:
-                    sensor_names.append(name.group()[1:-1])
-    return sensor_names
+                    sensor_names.add(name.group()[1:-1])
+    return list(sensor_names)
 
 def angle_substract(theta1,theta2):
     # Return the most efficient substraction of theta1-theta2.
@@ -185,7 +185,7 @@ def loss(C_1,dists,light_strengths,C_0=0,fit_type='light_readings',loss_type='rm
     b=model.coef_[0][0]
 
 
-    print('fit_type:',fit_type)
+    # print('fit_type:',fit_type)
     if fit_type=="light_readings":
         ## h(r)=k(r-C_1)**b+C_0
         yhat=k*(dists-C_1)**b+C_0

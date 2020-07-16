@@ -13,7 +13,7 @@ from dLdp import analytic_dLdp,dLdp,L,dSdp
 from FIMPathPlanning import FIM_ascent_path_planning
 from ConcentricPathPlanning import concentric_path_planning
 
-BURGER_MAX_LIN_VEL = 0.22
+BURGER_MAX_LIN_VEL = 0.22 * 1
 
 
 class multi_robot_controller(object):
@@ -31,7 +31,8 @@ class multi_robot_controller(object):
 		The single_robot_sensors will do their job to track the waypoints. This is in fact implementing an MPC algorithm. 
 
 	"""
-	def __init__(self, robot_names,pose_type_string,awake_freq=2,initial_movement_radius=1.5):
+	def __init__(self, robot_names,pose_type_string,\
+						awake_freq=2,initial_movement_radius=0.5,initial_movement_time=5):
 		self.robot_names=robot_names
 		self.awake_freq=awake_freq
 		self.n_robots=len(robot_names)
@@ -40,6 +41,8 @@ class multi_robot_controller(object):
 		# Path Planning Parameters
 		self.initial_movement_finished = False
 		self.initial_movement_radius = initial_movement_radius
+		self.initial_movement_time=initial_movement_time
+
 		self.planning_timesteps = 50
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
 		self.planning_dt = 1
@@ -80,9 +83,11 @@ class multi_robot_controller(object):
 		"""
 		keys=self.curr_est_locs.keys()
 		print('Current Target Location Estimates:',self.curr_est_locs)
-		if 'ekf' in keys: 
+		# if 'ekf' in keys:
+		if False: 
 			return self.curr_est_locs['ekf']
 		elif 'pf' in keys:
+		# elif False:
 			return self.curr_est_locs['pf']
 		elif 'multi_lateration' in keys:
 			return self.curr_est_locs['multi_lateration']
@@ -93,10 +98,13 @@ class multi_robot_controller(object):
 
 	def start(self):
 		rate=rospy.Rate(self.awake_freq)
-
+		sim_time = 0
 		while (not rospy.is_shutdown()):
 
 			rate.sleep()
+
+			sim_time+=1/self.awake_freq
+
 			print('real_time_controlling')
 
 			# Update the robot pose informations.
@@ -146,10 +154,11 @@ class multi_robot_controller(object):
 				else:
 					if not self.initial_movement_finished:		
 						print('Performing Initial Movements')																								# R,ps,n_p,n_steps,max_linear_speed,dt,epsilon
-						self.waypoints,self.initial_movement_finished = concentric_path_planning(\
+						self.waypoints, radius_reached = concentric_path_planning(\
 																		self.initial_movement_radius,ps,self.n_robots,\
 																		self.planning_timesteps,self.max_linear_speed,\
 																		self.planning_dt)
+						self.initial_movement_finished = radius_reached and sim_time>=self.initial_movement_time
 					else:
 						print('Dynamic Tracking')
 						# Feed in everything needed by the waypoint planner. 

@@ -42,6 +42,9 @@ def LQR_for_motion_mimicry(waypoints,wakeup_dt,x_0,Q,R):
     # # Get rid of the waypoints that are left-behind.
     waypoints = waypoints[np.argmin(np.linalg.norm(waypoints-x_0[:2],axis=1)):]
     p,theta,v,omega,dsdt=scaled_spline_motion(waypoints,wakeup_dt)
+    
+    if len(p)==0 or len(theta)==0:
+        return [],[],[]
 
     ref_x = np.concatenate([p,theta.reshape(-1,1)],axis=1)
 

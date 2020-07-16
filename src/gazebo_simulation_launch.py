@@ -109,10 +109,10 @@ if __name__ == '__main__':
 	# Simplified pose format: [x,y,z,Yaw]. 
 	# The number of sensors and targets to use is automatically determined by the dimensions of poses passed in.
 
-	sensor_poses=[[2,3.5,0,np.pi],\
+	sensor_poses=[[1.5,3.5,0,np.pi],\
 	[2,3,0,np.pi],\
-	[2,2.5,0,np.pi]]
-	target_poses=[[8,3,0,0]]
+	[1.5,2.5,0,np.pi]]
+	target_poses=[[5,5,0,0]]
 
 	# sensor_poses=[[4,0,0],\
 	# [4,0.5,0,np.pi],\
