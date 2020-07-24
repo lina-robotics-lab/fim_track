@@ -11,7 +11,7 @@ def polar_projection(q,ps,r):
     ps_proj=((ps-q).T/dists * r).T +q
     return ps_proj
 
-def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,epsilon):
+def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,epsilon,region=None):
     """
         f_dLdp: a function handle, f_dLdp(q,ps)=dLdp.
         q: Current location of the target.
@@ -27,6 +27,9 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
             The update step size will be a constant = max_linear_speed * dt
         
         epsilon: when the planned trajectories end, how far away should they be to the target.
+        region: If None, unconstraint gradient ascent is performed. Otherwise, region should be
+        of class Region as defined in regions.py file in fim_track package, and projected gradient 
+        ascent onto the given region will be performed.
         ----------------------------------------------------------------------------------------
         Output: waypoints for each mobile sensor, Shape= (num_time_steps,num_sensors,2)
     """
@@ -48,9 +51,16 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
         grad_sizes[grad_sizes==0]=1 # Handle the case where the partial derivative is zero.
 
         update_steps=(grad.T/grad_sizes * step_size).T # Calculate the update steps to be applied to ps
-# 
-        candid_ps=ps+update_steps # Calculate the direct update before projecting onto the target sphere.
 
+        candid_ps=ps+update_steps # Calculate the direct update 
+        
+        # Perform the projection onto specified constraint region, if given.
+        if not region is None:
+            for i in range(len(ps)):
+                proj=region.project_point(candid_ps[i,:])
+                if not proj is None:
+                    candid_ps[i,:]=proj
+                    
         # Project candid_ps onto the "surveillance circle" once it steps into it
         if not np.all(np.linalg.norm(candid_ps-q,axis=1)>=epsilon):
             insiders=np.linalg.norm(candid_ps-q,axis=1)<epsilon

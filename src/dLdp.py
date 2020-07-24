@@ -112,7 +112,7 @@ def FIM(C1s,C0s,ks,bs,sigma=1):
 
 def L(C1s,C0s,ks,bs,sigma=1):
     """
-        The reward function big L. 
+        The loss function big L. 
     """
     # return jnp.linalg.det(FIM(q,ps,C1s,C0s,ks,bs,sigma))
     return lambda q,ps:jnp.trace(jnp.linalg.inv(FIM(C1s,C0s,ks,bs,sigma)(q,ps)))

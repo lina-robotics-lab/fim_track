@@ -12,6 +12,7 @@ from robot_listener import robot_listener
 from dLdp import analytic_dLdp,dLdp,L,dSdp
 from FIMPathPlanning import FIM_ascent_path_planning
 from ConcentricPathPlanning import concentric_path_planning
+from regions import Rect2D
 
 BURGER_MAX_LIN_VEL = 0.22 * 1
 
@@ -32,11 +33,13 @@ class multi_robot_controller(object):
 
 	"""
 	def __init__(self, robot_names,pose_type_string,\
-						awake_freq=2,initial_movement_radius=0.5,initial_movement_time=5):
+						awake_freq=2,initial_movement_radius=0.5,initial_movement_time=5,xlim=(0,5),ylim=(0,5)):
 		self.robot_names=robot_names
 		self.awake_freq=awake_freq
 		self.n_robots=len(robot_names)
 		self.robot_names=robot_names
+		self.xlim = xlim
+		self.ylim = ylim
 
 		# Path Planning Parameters
 		self.initial_movement_finished = False
@@ -83,8 +86,8 @@ class multi_robot_controller(object):
 		"""
 		keys=self.curr_est_locs.keys()
 		print('Current Target Location Estimates:',self.curr_est_locs)
-		# if 'ekf' in keys:
-		if False: 
+		if 'ekf' in keys:
+		# if False: 
 			return self.curr_est_locs['ekf']
 		elif 'pf' in keys:
 		# elif False:
@@ -170,7 +173,12 @@ class multi_robot_controller(object):
 						
 						# f_dLdp=dSdp(C1s=C1s,C0s=C0s,ks=ks,bs=bs)
 						
-						self.waypoints=FIM_ascent_path_planning(f_dLdp,q,ps,self.n_robots,self.planning_timesteps,self.max_linear_speed,self.planning_dt,self.epsilon)
+						self.waypoints=FIM_ascent_path_planning(f_dLdp,q,ps,self.n_robots,\
+																self.planning_timesteps,\
+																self.max_linear_speed,\
+																self.planning_dt,\
+																self.epsilon,\
+																Rect2D(self.xlim,self.ylim))
 					
 					# self.waypoints.shape should be (n_waypoints,n_sensors,space_dim)
 					# For example, (31,3,2)
