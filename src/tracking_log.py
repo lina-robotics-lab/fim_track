@@ -24,6 +24,9 @@ class logger(object):
 		self.target_locs = dict({r:[] for r in target_names})
 		self.sensor_locs = dict({r:[] for r in sensor_names})
 
+		self.curr_waypoints = dict()
+		self.waypoint_log = dict({r:[] for r in sensor_names})
+
 
 		## ROS setups
 		rospy.init_node('tracking_log',anonymous=False)
@@ -39,11 +42,21 @@ class logger(object):
 		self.est_loc_tag=['multi_lateration','intersection','ekf','pf']
 		
 		for tag in self.est_loc_tag:
-			self.est_loc_sub[tag]=rospy.Subscriber('/location_estimation/{}'.format(tag),Float32MultiArray, partial(self.est_loc_callback_,tag=tag))
+			self.est_loc_sub[tag]=rospy.Subscriber('/location_estimation/{}'.format(tag),\
+												Float32MultiArray, partial(self.est_loc_callback_,tag=tag))
 
+		# Waypoint subscribers
+
+		self.waypoint_sub=dict()
+		for r in sensor_names:
+			rospy.Subscriber('/{}/waypoints'.format(r),Float32MultiArray,\
+							partial(self.waypoint_callback_,sensor_name=r))
+		
 	def est_loc_callback_(self,data,tag):
 		self.curr_est_locs[tag]=np.array(data.data)
 	
+	def waypoint_callback_(self,data,sensor_name):
+		self.curr_waypoints[sensor_name] = np.array(data.data).reshape(-1,2)
 
 
 	def save_data(self,filepath='track_log_data.pkl'):
@@ -59,9 +72,12 @@ class logger(object):
 		logs['sensor_locs'] = stack_items(self.sensor_locs)
 		logs['target_locs'] = stack_items(self.target_locs)
 
+		logs['waypoints'] = self.waypoint_log
+
+		print('saving data at {}...'.format(filepath))
 		with open(filepath,'ab') as file:
 			pkl.dump(logs,file)
-		print(logs)
+		# print(logs)
 		
 	def start(self):
 		rate=rospy.Rate(self.awake_freq)
@@ -81,10 +97,14 @@ class logger(object):
 			for l in self.target_listeners:
 				self.target_locs[l.robot_name].append(toxy(l.robot_pose))
 
+			# Log waypoints
+			for key,val in self.curr_waypoints.items():
+				self.waypoint_log[key].append(val)
+
 			rate.sleep()
 		
 		# After Ctrl+C is pressed, save the log data to pickle file.
-		print('saving data...')
+		
 		self.save_data()
 
 
