@@ -33,11 +33,15 @@ def launch_tracking_suite(pose_type_string,n_robots,local_track_alg,sensor_names
 	node=roslaunch.core.Node(package='fim_track',node_type='multi_robot_controller.py',name='multi_robot_controller',namespace='/',args=args,output='screen')
 	launch.launch(node)
 
-	# Finally, as many single_robot_controller as specified
+	# Next, as many single_robot_controller as specified
 	for i in range(n_robots):
 		args=" ".join([pose_type_string,sensor_names[i],local_track_alg])
 		node=roslaunch.core.Node(package='fim_track',node_type='single_robot_controller.py',name='single_robot_controller_{}'.format(i),namespace='/',args=args,output='screen')
 		launch.launch(node)
+	
+	# Finally, start the logging utility
+	# args = " ".join([pose_type_string])
+	# node = roslaunch.core.Node(package='fim_track',node_type='tracking_log.py',name = 'logger',namespace='/',args = args,output = 'screen')
 
 	try:
 		launch.spin()

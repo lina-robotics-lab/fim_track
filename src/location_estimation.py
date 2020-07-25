@@ -13,7 +13,7 @@ from robot_listener import robot_listener
 
 
 class location_estimation:
-	def __init__(self,robot_names,pose_type_string,awake_freq=10,qhint=None):
+	def __init__(self,robot_names,pose_type_string,qhint=None,awake_freq=10,target_name=None):
 		"""
 			pose_type_string is one in ["turtlesimPose", "Pose", "Odom", "optitrack"]
 		"""
@@ -26,17 +26,13 @@ class location_estimation:
 		self.robot_names=robot_names
 		self.listeners=[robot_listener(r,pose_type_string) for r in robot_names]
 
-		
-		self.target_pose=None
+		self.target_name = target_name
 		self.true_target_loc=[]
 		self.estimated_locs=[]
 
 		self.awake_freq=awake_freq		
 
 		self.qhint=qhint
-
-		if target_name!=None:
-			rospy.Subscriber('/vrpn_client_node/{}/pose'.format(target_name),PoseStamped,self.target_pose_callback_)
 
 		self.initial_movement_finished=False
 		rospy.Subscriber('/multi_robot_controller/initial_movement_finished',Bool,self.initial_movement_callback_)
@@ -48,6 +44,11 @@ class location_estimation:
 
 		self.algs=['multi_lateration','intersection']
 		self.algs.extend(self.dynamic_filter_algs)
+
+		self.target_listener = None
+		if target_name!=None:
+				self.target_listener = robot_listener(target_name,pose_type_string)
+				self.algs.append('actual_loc')
 		
 		for alg in self.algs:
 			self.estimation_pub[alg]=rospy.Publisher('location_estimation/{}'.format(alg),Float32MultiArray,queue_size=10)
@@ -96,7 +97,12 @@ class location_estimation:
 			for key,dynamic_filter in self.dynamic_filters.items():
 				if not dynamic_filter is None:
 					estimates[key]=dynamic_filter.update_and_estimate_loc(np.array(latest_sensor_locs),np.array(latest_scalar_readings))
-
+			
+			if not self.target_listener is None:
+				actual_loc = self.target_listener.robot_pose
+				if not actual_loc is None:
+					estimates['actual_loc']=toxy(actual_loc)
+	
 			return estimates
 		else:
 			return None
@@ -119,10 +125,8 @@ class location_estimation:
 
 	def initial_movement_callback_(self,finished):
 		self.initial_movement_finished = finished.data
-	def target_pose_callback_(self,data):
-		# print(data)
-		self.target_pose=data.data
-
+	
+	
 	def start(self,target_name=None,save_data=False,trail_num=0):
 		
 		
@@ -186,8 +190,8 @@ class location_estimation:
 					out.data=est
 					self.estimation_pub[alg].publish(out)
 			
-			if target_name!=None and self.target_pose!=None:
-				self.true_target_loc.append(pose2xz(self.target_pose))
+			if self.target_name!=None:
+				self.true_target_loc.append(toxy(self.target_listener.robot_pose))
 			rate.sleep()
 
 		if save_data:
@@ -215,13 +219,13 @@ if __name__=='__main__':
 	robot_names=get_sensor_names()		
 	n_robots = len(robot_names)
 	
-	# target_name='target_0'
-	target_name=None
+	target_name='target_0'
+	# target_name=None
 
 	
 	qhint=np.array([0.0,0.0])
 	# qhint=None
 	
-	le=location_estimation(robot_names,pose_type_string,qhint=qhint)
+	le=location_estimation(robot_names,pose_type_string,qhint=qhint,awake_freq=10,target_name=target_name)
 	le.start(target_name=target_name,trail_num=7)
 

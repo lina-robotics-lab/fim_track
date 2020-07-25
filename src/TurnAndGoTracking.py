@@ -14,7 +14,7 @@ from geometry_msgs.msg import Twist
 # BURGER_MAX_LIN_VEL = 0.22
 # BURGER_MAX_ANG_VEL = 2.84
 
-BURGER_MAX_LIN_VEL = 0.22 * 0.5
+BURGER_MAX_LIN_VEL = 0.22 * 0.0
 BURGER_MAX_ANG_VEL = 2.84 
 turtlebot3_model='burger'
 

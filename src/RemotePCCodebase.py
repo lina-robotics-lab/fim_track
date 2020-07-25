@@ -17,6 +17,19 @@ def get_sensor_names():
                     sensor_names.add(name.group()[1:-1])
     return list(sensor_names)
 
+def get_target_names():
+    sensor_names = set()
+    for topic in rospy.get_published_topics():
+            topic_split = re.split('/',topic[0])
+            if ('pose' in topic_split) or ('odom' in topic_split):
+                # pose_type_string = topic[1]
+                name = re.search('/target_.*/',topic[0])
+                if not name is None:
+                    sensor_names.add(name.group()[1:-1])
+    return list(sensor_names)
+
+
+
 def angle_substract(theta1,theta2):
     # Return the most efficient substraction of theta1-theta2.
 

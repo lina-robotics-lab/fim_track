@@ -14,7 +14,7 @@ from FIMPathPlanning import FIM_ascent_path_planning
 from ConcentricPathPlanning import concentric_path_planning
 from regions import Rect2D
 
-BURGER_MAX_LIN_VEL = 0.22 * 1
+BURGER_MAX_LIN_VEL = 0.22 * 0.1
 
 
 class multi_robot_controller(object):
@@ -33,7 +33,7 @@ class multi_robot_controller(object):
 
 	"""
 	def __init__(self, robot_names,pose_type_string,\
-						awake_freq=2,initial_movement_radius=0.5,initial_movement_time=5,xlim=(0,5),ylim=(0,5)):
+						awake_freq=0.5,initial_movement_radius=0.5,initial_movement_time=5,xlim=(0.0,10.0),ylim=(0,10.0)):
 		self.robot_names=robot_names
 		self.awake_freq=awake_freq
 		self.n_robots=len(robot_names)
@@ -63,7 +63,13 @@ class multi_robot_controller(object):
 
 		# Estimated location subscribers
 		self.est_loc_sub=dict()
-		self.est_algs=['multi_lateration','intersection','ekf','pf']
+		self.est_algs=[\
+						'multi_lateration',\
+						'intersection',\
+						'ekf',\
+						'pf',\
+						'actual_loc'\
+						]
 		# self.est_algs=['pf']
 		
 		for alg in self.est_algs:
@@ -86,8 +92,10 @@ class multi_robot_controller(object):
 		"""
 		keys=self.curr_est_locs.keys()
 		print('Current Target Location Estimates:',self.curr_est_locs)
-		if 'ekf' in keys:
-		# if False: 
+
+		if 'actual_loc' in keys:
+			return self.curr_est_locs['actual_loc']
+		elif 'ekf' in keys:
 			return self.curr_est_locs['ekf']
 		elif 'pf' in keys:
 		# elif False:
@@ -105,8 +113,6 @@ class multi_robot_controller(object):
 		while (not rospy.is_shutdown()):
 
 			rate.sleep()
-
-			sim_time+=1/self.awake_freq
 
 			print('real_time_controlling')
 
@@ -127,8 +133,6 @@ class multi_robot_controller(object):
 			for alg, est in self.curr_est_locs.items():
 				# print(alg,est)
 				pass
-
-
 			
 			# Start generating waypoints.
 
@@ -159,9 +163,10 @@ class multi_robot_controller(object):
 						print('Performing Initial Movements')																								# R,ps,n_p,n_steps,max_linear_speed,dt,epsilon
 						self.waypoints, radius_reached = concentric_path_planning(\
 																		self.initial_movement_radius,ps,self.n_robots,\
-																		self.planning_timesteps,self.max_linear_speed,\
+																		self.planning_timesteps,\
+																		self.max_linear_speed,\
 																		self.planning_dt)
-						self.initial_movement_finished = radius_reached and sim_time>=self.initial_movement_time
+						self.initial_movement_finished = radius_reached or sim_time>=self.initial_movement_time
 					else:
 						print('Dynamic Tracking')
 						# Feed in everything needed by the waypoint planner. 
@@ -194,10 +199,7 @@ class multi_robot_controller(object):
 						out.data=self.waypoints[:,i,:].ravel()
 						self.waypoint_pub[self.robot_names[i]].publish(out)
 
-					"""
-						To do: implement the single robot controllers, and feed them with the waypoints!
-					"""
-
+		sim_time+=1/self.awake_freq
 
 		
 		
@@ -212,8 +214,17 @@ if __name__ == '__main__':
 		if arguments>=1:
 			pose_type_string=sys.argv[1]
 		
-	robot_names=get_sensor_names()		
+	robot_names=get_sensor_names()	
+
 	n_robots = len(robot_names)
 	
-	mlt_controller=multi_robot_controller(robot_names,pose_type_string)	
+
+	mlt_controller=multi_robot_controller(robot_names,\
+										pose_type_string,\
+										awake_freq=0.5,\
+										initial_movement_radius=0.5,
+										initial_movement_time=5,
+										xlim=(0.0,10.0),\
+										ylim=(0.0,10.0))	
+
 	mlt_controller.start()
