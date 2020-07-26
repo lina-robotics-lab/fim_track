@@ -10,10 +10,10 @@ import sys
 from RemotePCCodebase import *
 from DynamicFilters import getDynamicFilter
 from robot_listener import robot_listener
-
+from regions import Rect2D
 
 class location_estimation:
-	def __init__(self,robot_names,pose_type_string,qhint=None,awake_freq=10,target_name=None):
+	def __init__(self,robot_names,pose_type_string,qhint=None,awake_freq=10,target_name=None,xlim=(0.0,10.0),ylim=(0,10.0)):
 		"""
 			pose_type_string is one in ["turtlesimPose", "Pose", "Odom", "optitrack"]
 		"""
@@ -21,7 +21,8 @@ class location_estimation:
 
 		robot_coef_dict=dict({r:np.zeros((4,)) for r in robot_names})
 		
-		
+		self.xlim = xlim
+		self.ylim = ylim		
 		self.n_robots=len(robot_names)
 		self.robot_names=robot_names
 		self.listeners=[robot_listener(r,pose_type_string) for r in robot_names]
@@ -31,8 +32,6 @@ class location_estimation:
 		self.estimated_locs=[]
 
 		self.awake_freq=awake_freq		
-
-		self.qhint=qhint
 
 		self.initial_movement_finished=False
 		rospy.Subscriber('/multi_robot_controller/initial_movement_finished',Bool,self.initial_movement_callback_)
@@ -91,18 +90,27 @@ class location_estimation:
 		if len(rhats)>0:
 			estimates=dict()
 			estimates['multi_lateration']=multi_lateration_from_rhat(np.vstack(sensor_locs),np.hstack(rhats).ravel())
-			if not self.qhint is None:
-				estimates['intersection']=intersection_localization(np.vstack(sensor_locs),np.hstack(rhats).ravel(),self.qhint)
+			
+			qhint = estimates['multi_lateration']
+			
+			estimates['intersection']=intersection_localization(np.vstack(sensor_locs),np.hstack(rhats).ravel(),qhint)
 			
 			for key,dynamic_filter in self.dynamic_filters.items():
 				if not dynamic_filter is None:
 					estimates[key]=dynamic_filter.update_and_estimate_loc(np.array(latest_sensor_locs),np.array(latest_scalar_readings))
 			
+			# Perform the estimation projection
+			box = Rect2D(self.xlim,self.ylim)
+			for key,val in estimates.items():
+				if not val is None:
+					estimates[key]=box.project_point(val)
+			
+
 			if not self.target_listener is None:
 				actual_loc = self.target_listener.robot_pose
 				if not actual_loc is None:
 					estimates['actual_loc']=toxy(actual_loc)
-	
+			
 			return estimates
 		else:
 			return None

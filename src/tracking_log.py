@@ -18,7 +18,9 @@ class logger(object):
 		self.awake_freq = awake_freq
 
 		## Data containers
-		self.curr_est_locs=dict()
+		self.est_loc_tag=['multi_lateration','intersection','ekf','pf']
+		
+		self.curr_est_locs=dict({tag:np.array([np.nan,np.nan]) for tag in self.est_loc_tag})
 		self.est_locs_log = dict()
 
 		self.target_locs = dict({r:[] for r in target_names})
@@ -39,7 +41,6 @@ class logger(object):
 
 		# Location subscribers
 		self.est_loc_sub=dict()
-		self.est_loc_tag=['multi_lateration','intersection','ekf','pf']
 		
 		for tag in self.est_loc_tag:
 			self.est_loc_sub[tag]=rospy.Subscriber('/location_estimation/{}'.format(tag),\

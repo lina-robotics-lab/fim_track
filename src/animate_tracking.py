@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pickle as pkl
 from matplotlib import animation, rc
 
-filepath = '/home/tianpeng/track_log_data_072520202046.pkl'
+filepath = '/home/tianpeng/track_log_data_1e-1noise.pkl'
 
 log = pkl.load(open(filepath,'rb'))
 
@@ -34,15 +34,15 @@ ax.set_aspect('equal')
 def animate(i):
 	ax.clear()
 	
-	ax.set_xlim((0,10))
-	ax.set_ylim((0,10))
+	ax.set_xlim((-5,12))
+	ax.set_ylim((-5,12))
 
 	ax.set_aspect('equal')
 
-	# for key,val in log['est_locs_log'].items():
-	# 	if key!="pf":
-	# 		ind = min([i,len(val)-1])
-	# 		plot_trajectory(ax,val[:ind],key,'.')
+	for key,val in log['est_locs_log'].items():
+		if key in["multi_lateration","intersection","ekf","pf"]:
+			ind = min([i,len(val)-1])
+			plot_trajectory(ax,val[:ind],key,'.')
 
 	for key,val in log['target_locs'].items():
 		ind = min([i,len(val)-1])
@@ -54,8 +54,9 @@ def animate(i):
 	
 	for key,val in log['waypoints'].items():
 		ind = min([i,len(val)-1])
-		print(len(val),key)
-		plot_trajectory(ax,val[ind],"waypoints for {}".format(key),'.')
+		# print(len(val),key)
+		plot_trajectory(ax,val[ind],"waypoints for {}".format(key),'+')
+	
 	ax.set_title('Frame {}'.format(i))
 	ax.legend(loc='upper left',bbox_to_anchor=(1, .8))
 
@@ -63,7 +64,7 @@ def animate(i):
 
 
 frames = np.inf 
-print(log)
+# print(log)
 for key,val in log['target_locs'].items():
 	frames = int(np.min([len(val),frames]))	
 # call the animator. blit=True means only re-draw the parts that have changed.
