@@ -184,9 +184,12 @@ def top_n_mean(readings,n):
         on Turtlebots into a single scalar value, representing the overall influence of 
         the light source to the Turtlebots.
     """
-
-    rowwise_sort=np.sort(readings,axis=1)
-    return np.mean(rowwise_sort[:,-n:],axis=1)
+    if len(readings.shape)>1:
+        rowwise_sort=np.sort(readings,axis=-1)
+        return np.mean(rowwise_sort[:,-n:],axis=1)
+    else:
+        rowwise_sort=np.sort(readings)
+        return np.mean(rowwise_sort[-n:])
 
 
 
@@ -270,6 +273,8 @@ def multi_lateration_from_rhat(sensor_locs,rhat):
     
     pfront=np.sum(sensor_locs[:-1,:]**2,axis=1)
     
+    print(len(sensor_locs),len(rhat))
+
     B=rfront-rback+pback-pfront
 
     qhat=np.linalg.pinv(A).dot(B)
@@ -279,7 +284,10 @@ def multi_lateration_from_rhat(sensor_locs,rhat):
 
 def rhat(scalar_readings,C1,C0,k,b):
     ## h(r)=k(r-C_1)**b+C_0
-    return ((scalar_readings-C0)/k)**(1/b)+C1
+    epsilon = 0.00001 # Prevent the case when scalar readings<C0
+    offset = scalar_readings-C0
+    offset[offset<0]=epsilon
+    return (np.max(offset)/k)**(1/b)+C1
 
 def multi_lateration(sensor_locs,scalar_readings,C1=0.07,C0=1.29,k=15.78,b=-2.16):
     rhat=rhat(scalar_readings,C1,C0,k,b)

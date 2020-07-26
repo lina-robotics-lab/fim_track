@@ -76,10 +76,6 @@ class multi_robot_controller(object):
 		for alg in self.est_algs:
 			self.est_loc_sub[alg]=rospy.Subscriber('/location_estimation/{}'.format(alg),Float32MultiArray, partial(self.est_loc_callback_,alg=alg))
 		
-		# Scalar Reading Subscribers
-		self.scalar_reading_sub = dict()
-		for name in robot_names:
-			self.scalar_reading_sub[name]=rospy.Subscriber('/{}/scalar_readings'.format(name),Float32,partial(self.scalar_reading_callback_,name = name))
 		
 		# Waypoint publishers
 		self.waypoint_pub=dict()
@@ -88,9 +84,7 @@ class multi_robot_controller(object):
 
 		# The status flag indicating whether initial movement is over.
 		self.initial_movement_pub = rospy.Publisher('/multi_robot_controller/initial_movement_finished',Bool,queue_size=10)
-	def scalar_reading_callback_(self,data,name):
-		self.scalar_readings[name]= data.data
-
+	
 	def est_loc_callback_(self,data,alg):
 		self.curr_est_locs[alg]=np.array(data.data)
 	

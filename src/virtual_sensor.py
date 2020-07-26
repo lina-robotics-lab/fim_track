@@ -204,7 +204,7 @@ class virtual_sensor(object):
 			influences = np.array(influences) # shape = (num_targets,num_sensors)
 			self.sensor_readings=np.sum(influences,axis=0) # shape = (num_senosrs,)
 			self.sensor_readings+=np.random.randn(self.num_sensors)*self.noise_std # Add the iid white noise.
-
+			self.sensor_readings[self.sensor_readings<0]=0 # Truncate negative readings
 
 			out=Float32MultiArray()
 			out.data=self.sensor_readings

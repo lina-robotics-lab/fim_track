@@ -70,11 +70,13 @@ class location_estimation:
 		scalar_readings_dict = dict()
 
 		for l in self.listeners:
-			if l.k!=None and len(l.light_reading_stack)>0:
+			if (not l.k is None) and len(l.scalar_reading_stack)>0:
 						
-				lookback_len=np.min([look_back,len(l.light_reading_stack),len(l.robot_loc_stack)])
+				lookback_len=np.min([look_back,len(l.scalar_reading_stack),len(l.robot_loc_stack)])
 
-				meas=top_n_mean(np.array(l.light_reading_stack[-lookback_len:]),2)
+				# meas=top_n_mean(np.array(l.light_reading_stack[-lookback_len:]),2)
+				meas=np.array(l.scalar_reading_stack[-lookback_len:])
+				# print(meas)
 
 				rh=rhat(meas,l.C1,l.C0,l.k,l.b)
 				# print(l.C1,l.C0,l.k,l.b)
@@ -84,6 +86,10 @@ class location_estimation:
 				loc=np.array(l.robot_loc_stack[-lookback_len:]).reshape(-2,2)
 				sensor_locs.append(loc)
 				l.rhats.append(rh)
+
+				print(sensor_locs,rhats)
+
+
 
 				# Thest two are for self.dynamic_filter.
 				latest_scalar_readings.append(meas[-1])
@@ -95,7 +101,9 @@ class location_estimation:
 				# print(l.robot_name,rh[0])	
 		# print('rh',rhats)
 		if len(rhats)>0:
+
 			estimates=dict()
+			print(np.vstack(sensor_locs),np.hstack(rhats).ravel())
 			estimates['multi_lateration']=multi_lateration_from_rhat(np.vstack(sensor_locs),np.hstack(rhats).ravel())
 			
 			qhint = estimates['multi_lateration']
@@ -152,14 +160,16 @@ class location_estimation:
 
 		while (not rospy.is_shutdown()):
 			
-
 			# Gather the latest readings from listeners
 			for l in self.listeners:
 				# print(l.light_readings,l.robot_name,l.robot_pose)
-				if not(l.robot_pose==None or l.light_readings==None):					
+				if not(l.robot_pose is None or l.scalar_reading is None):					
 					# print('name:',l.robot_name)
 					l.robot_loc_stack.append(toxy(l.robot_pose))
 					l.light_reading_stack.append(np.array(l.light_readings))
+					l.scalar_reading_stack.append(l.scalar_reading)
+
+					print(l.robot_name,l.robot_loc_stack,l.scalar_reading_stack)
 
 
 			'''
