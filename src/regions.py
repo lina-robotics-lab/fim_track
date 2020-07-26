@@ -32,4 +32,38 @@ class Rect2D(Region):
 
 		return np.array([constrain(pt[0],self.xmin,self.xmax),\
 						 constrain(pt[1],self.ymin,self.ymax)])
+
+class CircleInterior(Region):
+	"""CircleInterior"""
+	def __init__(self, origin, radius):
+		super(CircleInterior, self).__init__()
+		self.origin = origin
+		self.radius = radius
+
+	def project_point(self,pt):	
+		dist=np.linalg.norm(pt-self.origin)
+
+		if dist <= self.radius: # If pt is within the interior of the circle, do nothing
+			proj=pt
+		else: # If pt goes outside of the circle's interior, project it back to the boundary
+			proj=((pt-self.origin)/dist * self.radius).T + self.origin
+		return proj
+
+
+class CircleExterior(Region):
+	"""CircleExterior. The only difference is a change of inequality direction in the project point method."""
+	def __init__(self, origin, radius):
+		super(CircleInterior, self).__init__()
+		self.origin = origin
+		self.radius = radius
+
+	def project_point(self,pt):	
+		dist=np.linalg.norm(pt-self.origin)
+
+		if dist >= self.radius: # If pt is outside of the circle, do nothing
+			proj=pt
+		else: # If pt goes inside of the circle's interior, project it back to the boundary
+			proj=((pt-self.origin)/dist * self.radius).T + self.origin
+		return proj
+
 		

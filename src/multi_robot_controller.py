@@ -12,6 +12,7 @@ from robot_listener import robot_listener
 from dLdp import analytic_dLdp,dLdp,L,dSdp
 from FIMPathPlanning import FIM_ascent_path_planning
 from ConcentricPathPlanning import concentric_path_planning
+from MutualSepPathPlanning import mutual_separation_path_planning
 from regions import Rect2D
 
 BURGER_MAX_LIN_VEL = 0.22 * 1
@@ -161,11 +162,11 @@ class multi_robot_controller(object):
 				else:
 					if not self.initial_movement_finished:		
 						print('Performing Initial Movements')																								# R,ps,n_p,n_steps,max_linear_speed,dt,epsilon
-						self.waypoints, radius_reached = concentric_path_planning(\
-																		self.initial_movement_radius,ps,self.n_robots,\
-																		self.planning_timesteps,\
-																		self.max_linear_speed,\
-																		self.planning_dt)
+						self.waypoints,radius_reached = mutual_separation_path_planning(\
+																self.initial_movement_radius,ps,self.n_robots,\
+																self.planning_timesteps,\
+																self.max_linear_speed,\
+																self.planning_dt)
 						self.initial_movement_finished = radius_reached or sim_time>=self.initial_movement_time
 					else:
 						print('Dynamic Tracking')
