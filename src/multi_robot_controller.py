@@ -119,6 +119,8 @@ class multi_robot_controller(object):
 		rate=rospy.Rate(self.awake_freq)
 		sim_time = 0
 		while (not rospy.is_shutdown()):
+			sim_time+=1/self.awake_freq
+			print('sim_time',sim_time)
 
 			rate.sleep()
 
@@ -129,57 +131,52 @@ class multi_robot_controller(object):
 
 			all_loc_received = True
 			for l in self.listeners:
-				if not(l.robot_pose==None):					
+				if not(l.robot_pose==None or not l.robot_name in list(self.scalar_readings.keys())):					
 					l.robot_loc_stack.append(toxy(l.robot_pose))
-					# print('Robotname:',l.robot_name,l.robot_loc_stack[-1])
 				else:
 					all_loc_received = False
-					# print(l.robot_name,l.robot_loc_stack[-1])
-			# print(all_loc_received)
 			
 			if not all_loc_received:
 				continue
-			for alg, est in self.curr_est_locs.items():
-				# print(alg,est)
-				pass
+			ps=np.array([l.robot_loc_stack[-1] for l in self.listeners]).reshape(-1,2)
+			scalar_readings = np.array([self.scalar_readings[l.robot_name] for l in self.listeners])
+
 			
 			# Start generating waypoints.
-
-			q=self.get_est_loc()
-			if q is None:
-				print('Not received any estimation locs')
-				pass
+			# if True:
+			if not self.initial_movement_finished:		
+				print('Performing Initial Movements')																								# R,ps,n_p,n_steps,max_linear_speed,dt,epsilon
+				self.waypoints,radius_reached = mutual_separation_path_planning(\
+														self.initial_movement_radius,ps,self.n_robots,\
+														self.planning_timesteps,\
+														self.max_linear_speed,\
+														self.planning_dt,\
+														scalar_readings)
+				self.initial_movement_finished = sim_time>=self.initial_movement_time
 			else:
-
-				q=q.reshape(-1,2) # By default, this is using the estimation returned by ekf.
-
-				ps=np.array([l.robot_loc_stack[-1] for l in self.listeners]).reshape(-1,2)
-
-
-				C1s=[]
-				C0s=[]
-				ks=[]
-				bs=[]
-				for l in self.listeners:
-					C1s.append(l.C1)
-					C0s.append(l.C0)
-					ks.append(l.k)
-					bs.append(l.b)
-				if None in C1s or None in C0s or None in ks or None in bs:
-					print('Coefficients not fully yet received.')
+				# After the initial movement is completed, we switch to FIM gradient ascent.
+				q=self.get_est_loc()
+				if q is None:
+					print('Not received any estimation locs')
+					pass
 				else:
-					if not self.initial_movement_finished:		
-						print('Performing Initial Movements')																								# R,ps,n_p,n_steps,max_linear_speed,dt,epsilon
-						self.waypoints,radius_reached = mutual_separation_path_planning(\
-																self.initial_movement_radius,ps,self.n_robots,\
-																self.planning_timesteps,\
-																self.max_linear_speed,\
-																self.planning_dt)
-						self.initial_movement_finished = radius_reached or sim_time>=self.initial_movement_time
+					q=q.reshape(-1,2) # By default, this is using the estimation returned by ekf.
+					
+					C1s=[]
+					C0s=[]
+					ks=[]
+					bs=[]
+					for l in self.listeners:
+						C1s.append(l.C1)
+						C0s.append(l.C0)
+						ks.append(l.k)
+						bs.append(l.b)	
+				
+					if None in C1s or None in C0s or None in ks or None in bs:
+						print('Coefficients not fully yet received.')
 					else:
 						print('Dynamic Tracking')
 						# Feed in everything needed by the waypoint planner. 
-						# After the initial movement is completed, we switch to FIM gradient ascent.
 						
 						# f_dLdp=partial(analytic_dLdp,C1s=C1s,C0s=C0s,ks=ks,bs=bs)
 						
@@ -194,24 +191,18 @@ class multi_robot_controller(object):
 																self.epsilon,\
 																Rect2D(self.xlim,self.ylim))
 					
-					# self.waypoints.shape should be (n_waypoints,n_sensors,space_dim)
-					# For example, (31,3,2)
-					self.initial_movement_pub.publish(self.initial_movement_finished)
-					# print(self.initial_movement_finished)
-					# print(self.waypoints.shape,self.initial_movement_finished)
+			self.initial_movement_pub.publish(self.initial_movement_finished)
+			self.waypoints=self.waypoints.reshape(-1,self.n_robots,2)
+			
 
-					self.waypoints=self.waypoints.reshape(-1,self.n_robots,2)
-					
+			for i in range(self.n_robots):
+				out=Float32MultiArray()
+				out.data=self.waypoints[:,i,:].ravel()
+				self.waypoint_pub[self.robot_names[i]].publish(out)
 
-					for i in range(self.n_robots):
-						out=Float32MultiArray()
-						out.data=self.waypoints[:,i,:].ravel()
-						self.waypoint_pub[self.robot_names[i]].publish(out)
 
-		sim_time+=1/self.awake_freq
-
-		
-		
+	
+	
 if __name__ == '__main__':
 	
 	arguments = len(sys.argv) - 1

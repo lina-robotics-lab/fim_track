@@ -39,7 +39,9 @@ class location_estimation:
 		
 		# Prepare the publishers of location estimation, one for each estimation algorithm.
 		self.estimation_pub=dict()
-		self.dynamic_filter_algs = ['ekf','pf']
+		self.dynamic_filter_algs = [\
+									'ekf',\
+									'pf']
 		self.dynamic_filters=dict({alg:None for alg in self.dynamic_filter_algs})
 
 		self.algs=['multi_lateration','intersection']
@@ -166,9 +168,9 @@ class location_estimation:
 			The Magic to here: real-time localization algorithm.
 			Should be called after the location & light reading update is done.
 			'''
-			est_loc,self.scalar_readings=self.localize_target()
-
-			if not est_loc is None:
+			result=self.localize_target()
+			if not result is None:
+				est_loc,self.scalar_readings=result
 				C1s=[]
 				C0s=[]
 				ks=[]

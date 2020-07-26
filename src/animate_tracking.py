@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pickle as pkl
 from matplotlib import animation, rc
 
-filepath = '/home/tianpeng/track_log_data_1e-1noise.pkl'
+filepath = '/home/tianpeng/track_log_data_0.2hillclimbing+0.8est_1e-1noise.pkl'
 
 log = pkl.load(open(filepath,'rb'))
 
