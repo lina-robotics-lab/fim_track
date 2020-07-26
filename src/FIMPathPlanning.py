@@ -56,10 +56,10 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
         
         # Perform the projection onto specified constraint region, if given.
         if not region is None:
-            for i in range(len(ps)):
-                proj=region.project_point(candid_ps[i,:])
+            for j in range(len(ps)):
+                proj=region.project_point(candid_ps[j,:])
                 if not proj is None:
-                    candid_ps[i,:]=proj
+                    candid_ps[j,:]=proj
                     
         # Project candid_ps onto the "surveillance circle" once it steps into it
         if not np.all(np.linalg.norm(candid_ps-q,axis=1)>=epsilon):
