@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 from geometry_msgs.msg import PoseStamped,Pose, Twist
-from std_msgs.msg import Float32MultiArray,MultiArrayLayout,Bool
+from std_msgs.msg import Float32MultiArray,MultiArrayLayout,Bool,Float32
 import numpy as np
 from functools import partial
 import sys
@@ -55,6 +55,7 @@ class multi_robot_controller(object):
 		# Data containers
 		self.curr_est_locs=dict()
 		self.waypoints=None
+		self.scalar_readings=dict()
 	
 		# ROS setup
 		rospy.init_node('multi_robot_controller',anonymous=False)
@@ -71,11 +72,15 @@ class multi_robot_controller(object):
 						'pf',\
 						# 'actual_loc'\
 						]
-		# self.est_algs=['pf']
 		
 		for alg in self.est_algs:
 			self.est_loc_sub[alg]=rospy.Subscriber('/location_estimation/{}'.format(alg),Float32MultiArray, partial(self.est_loc_callback_,alg=alg))
-
+		
+		# Scalar Reading Subscribers
+		self.scalar_reading_sub = dict()
+		for name in robot_names:
+			self.scalar_reading_sub[name]=rospy.Subscriber('/{}/scalar_readings'.format(name),Float32,partial(self.scalar_reading_callback_,name = name))
+		
 		# Waypoint publishers
 		self.waypoint_pub=dict()
 		for name in self.robot_names:
@@ -83,7 +88,9 @@ class multi_robot_controller(object):
 
 		# The status flag indicating whether initial movement is over.
 		self.initial_movement_pub = rospy.Publisher('/multi_robot_controller/initial_movement_finished',Bool,queue_size=10)
-		
+	def scalar_reading_callback_(self,data,name):
+		self.scalar_readings[name]= data.data
+
 	def est_loc_callback_(self,data,alg):
 		self.curr_est_locs[alg]=np.array(data.data)
 	
@@ -116,6 +123,7 @@ class multi_robot_controller(object):
 			rate.sleep()
 
 			print('real_time_controlling')
+			print("Scalar Readings",self.scalar_readings)
 
 			# Update the robot pose informations.
 
