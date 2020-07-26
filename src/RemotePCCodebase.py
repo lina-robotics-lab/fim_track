@@ -6,6 +6,12 @@ from nav_msgs.msg import Odometry
 import rospy
 import re
 
+from datetime import datetime
+
+def timestamp():
+    now = datetime.now() # current date and time
+    return now.strftime("%m%d%Y%H%M")
+
 def get_sensor_names():
     sensor_names = set()
     for topic in rospy.get_published_topics():

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pickle as pkl
 from matplotlib import animation, rc
 
-filepath = 'track_log_data.pkl'
+filepath = '/home/tianpeng/track_log_data_072520202046.pkl'
 
 log = pkl.load(open(filepath,'rb'))
 
@@ -30,10 +30,14 @@ ax.set_aspect('equal')
 
 
 
-
 # animation function. This is called sequentially
 def animate(i):
 	ax.clear()
+	
+	ax.set_xlim((0,10))
+	ax.set_ylim((0,10))
+
+	ax.set_aspect('equal')
 
 	# for key,val in log['est_locs_log'].items():
 	# 	if key!="pf":
@@ -50,6 +54,7 @@ def animate(i):
 	
 	for key,val in log['waypoints'].items():
 		ind = min([i,len(val)-1])
+		print(len(val),key)
 		plot_trajectory(ax,val[ind],"waypoints for {}".format(key),'.')
 	ax.set_title('Frame {}'.format(i))
 	ax.legend(loc='upper left',bbox_to_anchor=(1, .8))
@@ -57,7 +62,11 @@ def animate(i):
 
 
 
+frames = np.inf 
+print(log)
+for key,val in log['target_locs'].items():
+	frames = int(np.min([len(val),frames]))	
 # call the animator. blit=True means only re-draw the parts that have changed.
-anim = animation.FuncAnimation(fig, animate, frames=100, interval=200, blit=False)
+anim = animation.FuncAnimation(fig, animate, frames=frames, interval=200, blit=False)
 # Change the (x,y) value in bbox_to_anchor argument to change the position of the legend box
 plt.show()

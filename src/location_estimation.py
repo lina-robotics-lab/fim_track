@@ -154,26 +154,25 @@ class location_estimation:
 			est_loc=self.localize_target()
 
 			if not est_loc is None:
+				C1s=[]
+				C0s=[]
+				ks=[]
+				bs=[]
+				for l in self.listeners:
+					C1s.append(l.C1)
+					C0s.append(l.C0)
+					ks.append(l.k)
+					bs.append(l.b)					
+				
+				# Set the initial guess of the dynamic filter to be the current est_loc.
+				# It comes from multi-lateration or intersection method.
+				# initial_guess = self.get_default_est_loc(est_loc)
+				initial_guess = est_loc['multi_lateration'].reshape(2,)
 
 				# Initialize the dynamic filter if the initial movements from the sensors are finished.
 				if self.initial_movement_finished:
 					for filter_alg in self.dynamic_filter_algs:
-						if self.dynamic_filters[filter_alg] is None:
-							C1s=[]
-							C0s=[]
-							ks=[]
-							bs=[]
-							for l in self.listeners:
-								C1s.append(l.C1)
-								C0s.append(l.C0)
-								ks.append(l.k)
-								bs.append(l.b)					
-							
-							# Set the initial guess of the dynamic filter to be the current est_loc.
-							# It comes from multi-lateration or intersection method.
-							# initial_guess = self.get_default_est_loc(est_loc)
-							initial_guess = est_loc['multi_lateration'].reshape(2,)
-
+						if self.dynamic_filters[filter_alg] is None:			
 							self.dynamic_filters[filter_alg]=getDynamicFilter(self.n_robots,NUM_TARGET,C1s,C0s,ks,bs,initial_guess=initial_guess,filterType=filter_alg)
 							if not self.dynamic_filters[filter_alg] is None:
 								print('{} initialized'.format(filter_alg))
@@ -183,9 +182,7 @@ class location_estimation:
 				self.estimated_locs.append(est_loc)
 				# print('\n Estimation of target location')
 				
-				for alg,est in est_loc.items():
-					# print('Estimated by {}:{}'.format(alg,est))
-					
+				for alg,est in est_loc.items():			
 					out=Float32MultiArray()
 					out.data=est
 					self.estimation_pub[alg].publish(out)
@@ -202,9 +199,7 @@ class location_estimation:
 				np.savetxt('light_readings_{}_{}.txt'.format(l.robot_name,trail_num),l.light_reading_stack,delimiter=',')
 				np.savetxt('coefs_{}_{}.txt'.format(l.robot_name,trail_num),[l.C1,l.C0,l.k,l.b],delimiter=',')
 				
-			if target_name!=None:
-				np.savetxt('true_target_loc_{}.txt'.format(trail_num),np.array(self.true_target_loc),delimiter=',')
-		
+			
 		
 if __name__=='__main__':
 

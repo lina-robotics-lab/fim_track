@@ -7,12 +7,12 @@ import pickle as pkl
 
 from std_msgs.msg import Float32MultiArray
 
-from RemotePCCodebase import get_sensor_names,get_target_names,prompt_pose_type_string,toxy
+from RemotePCCodebase import get_sensor_names,get_target_names,prompt_pose_type_string,toxy,timestamp
 from robot_listener import robot_listener
 
 class logger(object):
 	"""docstring for logger"""
-	def __init__(self, sensor_names,target_names,pose_type_string,awake_freq = 0.5):
+	def __init__(self, sensor_names,target_names,pose_type_string,awake_freq = 2):
 		super(logger, self).__init__()
 		
 		self.awake_freq = awake_freq
@@ -59,14 +59,15 @@ class logger(object):
 		self.curr_waypoints[sensor_name] = np.array(data.data).reshape(-1,2)
 
 
-	def save_data(self,filepath='track_log_data.pkl'):
+	def save_data(self,filename='track_log_data'):
 		logs = dict()
-		
+		filepath = "/home/tianpeng/{}_{}.pkl".format(filename,timestamp())
 		# A helper function
 		def stack_items(locs_log):
+			log = dict()
 			for key,val in locs_log.items():
-				locs_log[key] = np.vstack(val)
-			return locs_log
+				log[key] = np.vstack(val)
+			return log
 
 		logs['est_locs_log'] = stack_items(self.est_locs_log)
 		logs['sensor_locs'] = stack_items(self.sensor_locs)
@@ -75,7 +76,7 @@ class logger(object):
 		logs['waypoints'] = self.waypoint_log
 
 		print('saving data at {}...'.format(filepath))
-		with open(filepath,'ab') as file:
+		with open(filepath,'wb') as file:
 			pkl.dump(logs,file)
 		# print(logs)
 		
@@ -101,6 +102,7 @@ class logger(object):
 			for key,val in self.curr_waypoints.items():
 				self.waypoint_log[key].append(val)
 
+			self.save_data()
 			rate.sleep()
 		
 		# After Ctrl+C is pressed, save the log data to pickle file.

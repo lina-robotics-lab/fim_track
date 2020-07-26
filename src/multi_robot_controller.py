@@ -14,7 +14,7 @@ from FIMPathPlanning import FIM_ascent_path_planning
 from ConcentricPathPlanning import concentric_path_planning
 from regions import Rect2D
 
-BURGER_MAX_LIN_VEL = 0.22 * 0.1
+BURGER_MAX_LIN_VEL = 0.22 * 1
 
 
 class multi_robot_controller(object):
@@ -33,7 +33,7 @@ class multi_robot_controller(object):
 
 	"""
 	def __init__(self, robot_names,pose_type_string,\
-						awake_freq=0.5,initial_movement_radius=0.5,initial_movement_time=5,xlim=(0.0,10.0),ylim=(0,10.0)):
+						awake_freq=1,initial_movement_radius=0.5,initial_movement_time=5,xlim=(0.0,10.0),ylim=(0,10.0)):
 		self.robot_names=robot_names
 		self.awake_freq=awake_freq
 		self.n_robots=len(robot_names)
@@ -68,7 +68,7 @@ class multi_robot_controller(object):
 						'intersection',\
 						'ekf',\
 						'pf',\
-						'actual_loc'\
+						# 'actual_loc'\
 						]
 		# self.est_algs=['pf']
 		
@@ -91,7 +91,7 @@ class multi_robot_controller(object):
 			We will use a heuristic way to determine the estimated location based on the prediction from three candidate algorithms
 		"""
 		keys=self.curr_est_locs.keys()
-		print('Current Target Location Estimates:',self.curr_est_locs)
+		# print('Current Target Location Estimates:',self.curr_est_locs)
 
 		if 'actual_loc' in keys:
 			return self.curr_est_locs['actual_loc']
@@ -122,11 +122,11 @@ class multi_robot_controller(object):
 			for l in self.listeners:
 				if not(l.robot_pose==None):					
 					l.robot_loc_stack.append(toxy(l.robot_pose))
-					print('Robotname:',l.robot_name,l.robot_loc_stack[-1])
+					# print('Robotname:',l.robot_name,l.robot_loc_stack[-1])
 				else:
 					all_loc_received = False
 					# print(l.robot_name,l.robot_loc_stack[-1])
-			print(all_loc_received)
+			# print(all_loc_received)
 			
 			if not all_loc_received:
 				continue
@@ -222,8 +222,8 @@ if __name__ == '__main__':
 	mlt_controller=multi_robot_controller(robot_names,\
 										pose_type_string,\
 										awake_freq=0.5,\
-										initial_movement_radius=0.5,
-										initial_movement_time=5,
+										initial_movement_radius=2.5,
+										initial_movement_time=20,
 										xlim=(0.0,10.0),\
 										ylim=(0.0,10.0))	
 
