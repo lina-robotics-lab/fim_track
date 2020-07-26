@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 from geometry_msgs.msg import PoseStamped,Pose, Twist
-from std_msgs.msg import Float32MultiArray,Bool
+from std_msgs.msg import Float32MultiArray,Float32,Bool
 from turtlesim.msg import Pose as tPose
 from nav_msgs.msg import Odometry
 
@@ -30,7 +30,8 @@ class location_estimation:
 		self.target_name = target_name
 		self.true_target_loc=[]
 		self.estimated_locs=[]
-
+		self.scalar_readings = dict()
+		
 		self.awake_freq=awake_freq		
 
 		self.initial_movement_finished=False
@@ -52,6 +53,10 @@ class location_estimation:
 		for alg in self.algs:
 			self.estimation_pub[alg]=rospy.Publisher('location_estimation/{}'.format(alg),Float32MultiArray,queue_size=10)
 
+		# Prepare the scalar reading publisher, useful for hill climbing algorithms.
+		self.scalar_readings_pub = dict()
+		for name in self.robot_names:
+			self.scalar_readings_pub[name] = rospy.Publisher('{}/scalar_readings'.format(name),Float32,queue_size=10)
 	
 	
 	def localize_target(self,look_back=30):
@@ -62,6 +67,7 @@ class location_estimation:
 		# Thest two are for self.dynamic_filter. It does not require lookback but only needs the latest sensor loc and readings.
 		latest_scalar_readings=[]
 		latest_sensor_locs=[]
+		scalar_readings_dict = dict()
 
 		for l in self.listeners:
 			if l.k!=None and len(l.light_reading_stack)>0:
@@ -81,6 +87,7 @@ class location_estimation:
 
 				# Thest two are for self.dynamic_filter.
 				latest_scalar_readings.append(meas[-1])
+				scalar_readings_dict[l.robot_name]=meas[-1]
 				latest_sensor_locs.append(loc[-1,:])
 			else:
 				pass
@@ -111,7 +118,7 @@ class location_estimation:
 				if not actual_loc is None:
 					estimates['actual_loc']=toxy(actual_loc)
 			
-			return estimates
+			return estimates, scalar_readings_dict
 		else:
 			return None
 	def get_default_est_loc(self,curr_est_locs):
@@ -159,7 +166,7 @@ class location_estimation:
 			The Magic to here: real-time localization algorithm.
 			Should be called after the location & light reading update is done.
 			'''
-			est_loc=self.localize_target()
+			est_loc,self.scalar_readings=self.localize_target()
 
 			if not est_loc is None:
 				C1s=[]
@@ -190,11 +197,17 @@ class location_estimation:
 				self.estimated_locs.append(est_loc)
 				# print('\n Estimation of target location')
 				
+				# Publish Estimations
 				for alg,est in est_loc.items():			
 					out=Float32MultiArray()
 					out.data=est
 					self.estimation_pub[alg].publish(out)
-			
+				# Publish Scalar Readings
+				for robot_name,val in self.scalar_readings.items():
+					out=Float32()
+					out.data = val
+					self.scalar_readings_pub[robot_name].publish(out)
+
 			if self.target_name!=None:
 				self.true_target_loc.append(toxy(self.target_listener.robot_pose))
 			rate.sleep()
