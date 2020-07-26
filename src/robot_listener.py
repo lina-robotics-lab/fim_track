@@ -1,9 +1,6 @@
 import rospy
 from RemotePCCodebase import *
 from std_msgs.msg import Float32MultiArray
-import numpy as np
-
-TOP_N_MEAN=2
 class robot_listener:
 	''' Robot location and light_reading listener+data container.'''
 	def __init__(self,robot_name,pose_type_string):
@@ -21,12 +18,10 @@ class robot_listener:
 		self.coefs_topic="/{}/sensor_coefs".format(robot_name)
 		self.robot_pose=None
 		self.light_readings=None
-		self.scalar_reading = None
 
 		self.robot_loc_stack=[]
 		self.robot_yaw_stack=[]
 		self.light_reading_stack=[]
-		self.scalar_reading_stack = []
 		self.rhats=[]
 
 		self.C1=None
@@ -50,5 +45,5 @@ class robot_listener:
 
 	def light_callback_(self,data):
 
-		self.light_readings = np.array(data.data)
-		self.scalar_reading = top_n_mean(self.light_readings,TOP_N_MEAN)
+		self.light_readings=data.data
+
