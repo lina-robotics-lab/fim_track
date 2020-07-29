@@ -2,6 +2,7 @@
 
 from RemotePCCodebase import prompt_pose_type_string,get_sensor_names,stop_twist
 
+import argparse
 import roslaunch
 import rospy
 import rosparam
@@ -26,6 +27,7 @@ def launch_tracking_suite(pose_type_string,n_robots,local_track_alg,sensor_names
 
 	# Start launching nodes. First, the location estimation package.
 	args=" ".join([pose_type_string])
+	# print(args)
 	node=roslaunch.core.Node(package='fim_track',node_type='location_estimation.py',name='location_estimation',namespace='/',args=args,output='screen')
 	launch.launch(node)
 
@@ -67,13 +69,14 @@ def launch_tracking_suite(pose_type_string,n_robots,local_track_alg,sensor_names
 
 
 if __name__ == '__main__':
-	arguments=len(sys.argv)-1
-	if arguments<=0:
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--pose_type_string")
+	args = parser.parse_args()
+	
+	if not args.pose_type_string:
 		pose_type_string=prompt_pose_type_string()
-		# pose_type_string=""
 	else:
-		if arguments>=1:
-			pose_type_string=sys.argv[1]
+		pose_type_string=args.pose_type_string
 	
 	sensor_names = get_sensor_names()
 

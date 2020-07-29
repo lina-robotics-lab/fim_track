@@ -122,6 +122,7 @@ def toxy(pose):
         return posestmp2xy(pose)
     else:
         print('Pose to xy conversion is not yet handled for {}'.format(type(pose)))
+        assert(False)
         return None
 
 def get_pose_type_and_topic(pose_type,robot_name):
@@ -259,7 +260,7 @@ def calibrate_meas_coef(robot_loc,target_loc,light_readings,fit_type='light_read
 """
 
 def multi_lateration_from_rhat(sensor_locs,rhat):
-    
+    # print(sensor_locs,rhat)
     A=2*(sensor_locs[-1,:]-sensor_locs[:-1,:])
     
     rfront=rhat[:-1]**2
@@ -279,7 +280,11 @@ def multi_lateration_from_rhat(sensor_locs,rhat):
 
 def rhat(scalar_readings,C1,C0,k,b):
     ## h(r)=k(r-C_1)**b+C_0
-    return ((scalar_readings-C0)/k)**(1/b)+C1
+    offset = scalar_readings-C0
+
+    offset[offset<0] = scalar_readings[offset<0]
+        
+    return ((offset)/k)**(1/b)+C1
 
 def multi_lateration(sensor_locs,scalar_readings,C1=0.07,C0=1.29,k=15.78,b=-2.16):
     rhat=rhat(scalar_readings,C1,C0,k,b)

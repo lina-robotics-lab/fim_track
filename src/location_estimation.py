@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rospy
+import argparse
 from geometry_msgs.msg import PoseStamped,Pose, Twist
 from std_msgs.msg import Float32MultiArray,Float32,Bool
 from turtlesim.msg import Pose as tPose
@@ -13,7 +14,7 @@ from robot_listener import robot_listener
 from regions import Rect2D
 
 class location_estimation:
-	def __init__(self,robot_names,pose_type_string,qhint=None,awake_freq=10,target_name=None,xlim=(0.0,10.0),ylim=(0,10.0)):
+	def __init__(self,robot_names,pose_type_string,qhint=None,awake_freq=10,target_name=None,xlim=(0.0,2.4),ylim=(0,4.5)):
 		"""
 			pose_type_string is one in ["turtlesimPose", "Pose", "Odom", "optitrack"]
 		"""
@@ -79,8 +80,12 @@ class location_estimation:
 				meas=top_n_mean(np.array(l.light_reading_stack[-lookback_len:]),2)
 
 				rh=rhat(meas,l.C1,l.C0,l.k,l.b)
-				# print(l.C1,l.C0,l.k,l.b)
 
+				# Handle some nan rhat issue by interpolation.
+				# if np.any(np.isnan(rh)):
+				# 	print(l.robot_name)
+				rh[np.isnan(rh)]=np.mean(rh[np.logical_not(np.isnan(rh))])
+	
 				rhats.append(rh)
 
 				loc=np.array(l.robot_loc_stack[-lookback_len:]).reshape(-2,2)
@@ -93,9 +98,7 @@ class location_estimation:
 				latest_sensor_locs.append(loc[-1,:])
 			else:
 				pass
-				# print(l.robot_name,l.k,len(l.light_reading_stack))
-				# print(l.robot_name,rh[0])	
-		# print('rh',rhats)
+	
 		if len(rhats)>0:
 			estimates=dict()
 			estimates['multi_lateration']=multi_lateration_from_rhat(np.vstack(sensor_locs),np.hstack(rhats).ravel())
@@ -123,23 +126,7 @@ class location_estimation:
 			return estimates, scalar_readings_dict
 		else:
 			return None
-	def get_default_est_loc(self,curr_est_locs):
-		"""
-			We will use a heuristic way to determine the estimated location based on the prediction from three candidate algorithms
-		"""
-		keys = curr_est_locs.keys()
-		
-		if 'ekf' in keys: 
-			return curr_est_locs['ekf']
-		elif 'pf' in keys:
-			return curr_est_locs['pf']
-		elif 'multi_lateration' in keys:
-			return curr_est_locs['multi_lateration']
-		elif 'intersection' in keys:
-			return curr_est_locs['intersection']
-		else:
-			return None
-
+	
 	def initial_movement_callback_(self,finished):
 		self.initial_movement_finished = finished.data
 	
@@ -183,7 +170,6 @@ class location_estimation:
 				
 				# Set the initial guess of the dynamic filter to be the current est_loc.
 				# It comes from multi-lateration or intersection method.
-				# initial_guess = self.get_default_est_loc(est_loc)
 				initial_guess = est_loc['multi_lateration'].reshape(2,)
 
 				# Initialize the dynamic filter if the initial movements from the sensors are finished.
@@ -200,31 +186,26 @@ class location_estimation:
 				# print('\n Estimation of target location')
 				
 				# Publish Estimations
-				for alg,est in est_loc.items():			
-					out=Float32MultiArray()
-					out.data=est
-					self.estimation_pub[alg].publish(out)
+				for alg,est in est_loc.items():		
+					if not est is None:	
+						out=Float32MultiArray()
+						out.data=est
+						self.estimation_pub[alg].publish(out)
 				# Publish Scalar Readings
 				for robot_name,val in self.scalar_readings.items():
 					out=Float32()
 					out.data = val
 					self.scalar_readings_pub[robot_name].publish(out)
 
-			if self.target_name!=None:
+			if not self.target_name is None and not self.target_listener.robot_pose is None:
 				self.true_target_loc.append(toxy(self.target_listener.robot_pose))
 			rate.sleep()
 
-		if save_data:
-			np.savetxt('estimated_locs_{}.txt'.format(trail_num),np.array(self.estimated_locs),delimiter=',')
-			for l in self.listeners:
-				np.savetxt('sensor_locs_{}_{}.txt'.format(l.robot_name,trail_num),np.array(l.robot_loc_stack),delimiter=',')
-				np.savetxt('rhats_{}_{}.txt'.format(l.robot_name,trail_num),np.hstack(l.rhats).ravel(),delimiter=',')
-				np.savetxt('light_readings_{}_{}.txt'.format(l.robot_name,trail_num),l.light_reading_stack,delimiter=',')
-				np.savetxt('coefs_{}_{}.txt'.format(l.robot_name,trail_num),[l.C1,l.C0,l.k,l.b],delimiter=',')
 				
 			
 		
 if __name__=='__main__':
+	
 
 	arguments = len(sys.argv) - 1
 

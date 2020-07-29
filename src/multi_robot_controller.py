@@ -15,7 +15,7 @@ from ConcentricPathPlanning import concentric_path_planning
 from MutualSepPathPlanning import mutual_separation_path_planning
 from regions import Rect2D
 
-BURGER_MAX_LIN_VEL = 0.22 * 1
+BURGER_MAX_LIN_VEL = 0.22 * 0.5
 
 
 class multi_robot_controller(object):
@@ -47,9 +47,9 @@ class multi_robot_controller(object):
 		self.initial_movement_radius = initial_movement_radius
 		self.initial_movement_time=initial_movement_time
 
-		self.planning_timesteps = 50
+		self.planning_timesteps = 100
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
-		self.planning_dt = 1
+		self.planning_dt = 1/self.awake_freq
 		self.epsilon=0.5
 
 		# Data containers
@@ -67,9 +67,9 @@ class multi_robot_controller(object):
 		self.est_loc_sub=dict()
 		self.est_algs=[\
 						'multi_lateration',\
-						'intersection',\
-						'ekf',\
-						'pf',\
+						# 'intersection',\
+						# 'ekf',\
+						# 'pf',\
 						# 'actual_loc'\
 						]
 		
@@ -99,7 +99,7 @@ class multi_robot_controller(object):
 			We will use a heuristic way to determine the estimated location based on the prediction from three candidate algorithms
 		"""
 		keys=self.curr_est_locs.keys()
-		# print('Current Target Location Estimates:',self.curr_est_locs)
+		print('Current Target Location Estimates:',self.curr_est_locs)
 
 		if 'actual_loc' in keys:
 			return self.curr_est_locs['actual_loc']
@@ -144,6 +144,7 @@ class multi_robot_controller(object):
 			
 			# Start generating waypoints.
 			# if True:
+			q=self.get_est_loc()
 			if not self.initial_movement_finished:		
 				print('Performing Initial Movements')																								# R,ps,n_p,n_steps,max_linear_speed,dt,epsilon
 				self.waypoints,radius_reached = mutual_separation_path_planning(\
@@ -152,10 +153,10 @@ class multi_robot_controller(object):
 														self.max_linear_speed,\
 														self.planning_dt,\
 														scalar_readings)
+				# print('Reached',radius_reached)
 				self.initial_movement_finished = sim_time>=self.initial_movement_time
 			else:
 				# After the initial movement is completed, we switch to FIM gradient ascent.
-				q=self.get_est_loc()
 				if q is None:
 					print('Not received any estimation locs')
 					pass
@@ -205,6 +206,8 @@ class multi_robot_controller(object):
 	
 if __name__ == '__main__':
 	
+	print(sys.argv)
+
 	arguments = len(sys.argv) - 1
 	
 
@@ -221,10 +224,10 @@ if __name__ == '__main__':
 
 	mlt_controller=multi_robot_controller(robot_names,\
 										pose_type_string,\
-										awake_freq=0.5,\
-										initial_movement_radius=2.5,
-										initial_movement_time=20,
-										xlim=(0.0,10.0),\
-										ylim=(0.0,10.0))	
+										awake_freq= 10,\
+										initial_movement_radius=0.8,
+										initial_movement_time=5,
+										xlim=(0.0,2.4),\
+										ylim=(0.0,4.5))	
 
 	mlt_controller.start()

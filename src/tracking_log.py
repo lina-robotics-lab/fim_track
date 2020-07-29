@@ -60,14 +60,16 @@ class logger(object):
 		self.curr_waypoints[sensor_name] = np.array(data.data).reshape(-1,2)
 
 
-	def save_data(self,filename='track_log_data'):
+	def save_data(self,filepath):
 		logs = dict()
-		filepath = "/home/tianpeng/{}_{}.pkl".format(filename,timestamp())
+		
 		# A helper function
 		def stack_items(locs_log):
 			log = dict()
 			for key,val in locs_log.items():
-				log[key] = np.vstack(val)
+				if not val is None:
+					if len(val)>0:
+						log[key] = np.vstack(val)
 			return log
 
 		logs['est_locs_log'] = stack_items(self.est_locs_log)
@@ -76,39 +78,43 @@ class logger(object):
 
 		logs['waypoints'] = self.waypoint_log
 
-		print('saving data at {}...'.format(filepath))
 		with open(filepath,'wb') as file:
 			pkl.dump(logs,file)
-		# print(logs)
 		
-	def start(self):
+	def start(self,filepath):
 		rate=rospy.Rate(self.awake_freq)
 		sim_time = 0
 		while (not rospy.is_shutdown()):
-			print("logging data...")
-
+			
 			# Log estimated loc data
 			for key,val in self.curr_est_locs.items():
 				if not key in self.est_locs_log.keys():
 					self.est_locs_log[key] = []
-				self.est_locs_log[key].append(val)
+				if not val is None:
+					# val = np.nan * np.ones(2,)	
+					self.est_locs_log[key].append(val)
 
 			# Log sensor and target loc data
 			for l in self.listeners:
-				self.sensor_locs[l.robot_name].append(toxy(l.robot_pose))
+				if not l.robot_pose is None:
+					self.sensor_locs[l.robot_name].append(toxy(l.robot_pose))
 			for l in self.target_listeners:
-				self.target_locs[l.robot_name].append(toxy(l.robot_pose))
+				if not l.robot_pose is None:
+					self.target_locs[l.robot_name].append(toxy(l.robot_pose))
 
 			# Log waypoints
 			for key,val in self.curr_waypoints.items():
-				self.waypoint_log[key].append(val)
+				if not val is None:
+					self.waypoint_log[key].append(val)
 
-			self.save_data()
+			self.save_data(filepath)
 			rate.sleep()
 		
 		# After Ctrl+C is pressed, save the log data to pickle file.
 		
-		self.save_data()
+		self.save_data(filepath)
+		print('saving data at {}...'.format(filepath))
+		
 
 
 def main(argv):
@@ -123,7 +129,11 @@ def main(argv):
 	sensor_names = get_sensor_names()
 	target_names = get_target_names()
 	log = logger(sensor_names,target_names,pose_type_string)
-	log.start()
+
+	filename = 'track_log_data'
+	filepath = "/home/tianpeng/{}.pkl".format(filename)
+		
+	log.start(filepath=filepath)
 
 if __name__ == '__main__':
 	main(sys.argv)
