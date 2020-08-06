@@ -23,18 +23,19 @@ class single_robot_controller(object):
 
 	 Controller Kernel Algorithm: LQR for waypoint tracking.
 	"""
-	def __init__(self, robot_name,pose_type_string,awake_freq=10,kernel_algorithm='LQR'):
+	def __init__(self, robot_name,pose_type_string,awake_freq=10,kernel_algorithm='LQR',planning_dt=1):
 		# Parameters
 		self.robot_name=robot_name
 		self.awake_freq=awake_freq
 		self.kernel_algorithm=kernel_algorithm
-
+		self.planning_dt = planning_dt
 
 		# Data containers
 		self.all_waypoints=None
 		self.remaining_waypoints=None
 		self.lqr_u=deque()
 		self.curr_lqr_ind=0
+
 
 		# ROS Setup
 		rospy.init_node('single_robot_controller_{}'.format(self.robot_name))
@@ -55,7 +56,7 @@ class single_robot_controller(object):
 			yaw=self.listener.robot_yaw_stack[-1]
 			curr_x = np.array([loc[0],loc[1],yaw])
 			
-			uhat,_,_ =LQR_for_motion_mimicry(self.all_waypoints,1/self.awake_freq,curr_x,Q=np.eye(3)*self.Q_strength,R=np.eye(2)*self.R_strength)
+			uhat,_,_ =LQR_for_motion_mimicry(self.all_waypoints,self.planning_dt,curr_x,Q=np.eye(3)*self.Q_strength,R=np.eye(2)*self.R_strength)
 			self.lqr_u=uhat
 			self.curr_lqr_ind=0
 		self.remaining_waypoints=deque([self.all_waypoints[i,:] for i in range(len(self.all_waypoints))])
@@ -127,6 +128,7 @@ if __name__ == '__main__':
 		if arguments>=3:
 			kernel_algorithm = sys.argv[3]
 
+	planning_dt = 2;
 
-	controller=single_robot_controller(robot_name,pose_type_string,kernel_algorithm=kernel_algorithm)	
+	controller=single_robot_controller(robot_name,pose_type_string,kernel_algorithm=kernel_algorithm,planning_dt=planning_dt)	
 	controller.start()

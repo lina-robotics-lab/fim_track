@@ -34,7 +34,7 @@ class multi_robot_controller(object):
 
 	"""
 	def __init__(self, robot_names,pose_type_string,\
-						awake_freq=1,initial_movement_radius=0.5,initial_movement_time=5,xlim=(0.0,10.0),ylim=(0,10.0)):
+						awake_freq=1,initial_movement_radius=0.5,initial_movement_time=5,xlim=(0.0,10.0),ylim=(0,10.0),planning_dt=1):
 		self.robot_names=robot_names
 		self.awake_freq=awake_freq
 		self.n_robots=len(robot_names)
@@ -49,7 +49,7 @@ class multi_robot_controller(object):
 
 		self.planning_timesteps = 100
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
-		self.planning_dt = 1/self.awake_freq
+		self.planning_dt = planning_dt
 		self.epsilon=0.5
 
 		# Data containers
@@ -119,7 +119,6 @@ class multi_robot_controller(object):
 		rate=rospy.Rate(self.awake_freq)
 		sim_time = 0
 		while (not rospy.is_shutdown()):
-			sim_time+=1/self.awake_freq
 			print('sim_time',sim_time)
 
 			rate.sleep()
@@ -201,7 +200,8 @@ class multi_robot_controller(object):
 				out.data=self.waypoints[:,i,:].ravel()
 				self.waypoint_pub[self.robot_names[i]].publish(out)
 
-
+			sim_time+=1/self.awake_freq
+			
 	
 	
 if __name__ == '__main__':
@@ -226,8 +226,9 @@ if __name__ == '__main__':
 										pose_type_string,\
 										awake_freq= 10,\
 										initial_movement_radius=0.8,
-										initial_movement_time=5,
-										xlim=(0.0,2.4),\
-										ylim=(0.0,4.5))	
+										initial_movement_time=10,
+										xlim=(0.4,2.4),\
+										ylim=(0.4,4.5),\
+										planning_dt = 4)	
 
 	mlt_controller.start()

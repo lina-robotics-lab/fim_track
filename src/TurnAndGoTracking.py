@@ -86,7 +86,7 @@ class TurnAndGo:
 		  w = constrain(w, -BURGER_MAX_ANG_VEL, BURGER_MAX_ANG_VEL)
 		return w
 	
-	def _linear_vel(self,angular_vel,dist,K=0.5,v0=0.5):
+	def _linear_vel(self,angular_vel,dist,K=0.5,v0=0.0):
 		"""
 			This ensures when angular velocity is large, the linear velocity
 			will be small. When angular velocity is small, the robot can go
@@ -103,7 +103,7 @@ class TurnAndGo:
 	def _angular_vel(self, target_yaw):
 		"""See video: https://www.youtube.com/watch?v=Qh15Nol5htM."""
 		# New version, taking into consideration the most efficient direction of turning.
-		return self.angular_vel_gain * angle_substract(target_yaw , self.yaw)
+		return BURGER_MAX_ANG_VEL * angle_substract(target_yaw , self.yaw)/np.pi
 		
 		# Old version
 		# return self.angular_vel_gain * (target_yaw - self.yaw)
