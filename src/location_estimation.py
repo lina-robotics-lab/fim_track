@@ -8,10 +8,10 @@ from nav_msgs.msg import Odometry
 
 import numpy as np
 import sys
-from RemotePCCodebase import *
-from DynamicFilters import getDynamicFilter
+from utils.RemotePCCodebase import *
+from utils.DynamicFilters import getDynamicFilter
 from robot_listener import robot_listener
-from regions import Rect2D
+from utils.regions import Rect2D
 
 class location_estimation:
 	def __init__(self,robot_names,pose_type_string,qhint=None,awake_freq=10,target_name=None,xlim=(0.0,2.4),ylim=(0,4.5)):

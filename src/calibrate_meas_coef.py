@@ -5,8 +5,8 @@ from std_msgs.msg import Float32MultiArray
 import numpy as np
 import sys
 from spin_and_collect import spin_and_collect
-from RemotePCCodebase import calibrate_meas_coef as cc
-from RemotePCCodebase import pose2xz
+from utils.RemotePCCodebase import calibrate_meas_coef as cc
+from utils.RemotePCCodebase import pose2xz
 
 class calibrate_meas_coef:
 	def __init__(self):

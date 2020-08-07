@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 
-from RemotePCCodebase import stop_twist,get_sensor_names
+from utils.RemotePCCodebase import stop_twist,get_sensor_names
 
 from geometry_msgs.msg import Twist
 

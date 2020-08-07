@@ -8,8 +8,7 @@ from nav_msgs.msg import Odometry
 import numpy as np
 from functools import partial
 
-import RemotePCCodebase 
-from RemotePCCodebase import *
+from utils.RemotePCCodebase import *
 
 class virtual_sensor(object):
 	"""

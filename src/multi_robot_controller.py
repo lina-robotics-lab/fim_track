@@ -6,14 +6,14 @@ import numpy as np
 from functools import partial
 import sys
 
-from RemotePCCodebase import prompt_pose_type_string,toxy,get_sensor_names
+from utils.RemotePCCodebase import prompt_pose_type_string,toxy,get_sensor_names
 from robot_listener import robot_listener
 
-from dLdp import analytic_dLdp,dLdp,L,dSdp
-from FIMPathPlanning import FIM_ascent_path_planning
-from ConcentricPathPlanning import concentric_path_planning
-from MutualSepPathPlanning import mutual_separation_path_planning
-from regions import Rect2D
+from utils.dLdp import analytic_dLdp,dLdp,L,dSdp
+from utils.FIMPathPlanning import FIM_ascent_path_planning
+from utils.ConcentricPathPlanning import concentric_path_planning
+from utils.MutualSepPathPlanning import mutual_separation_path_planning
+from utils.regions import Rect2D
 
 BURGER_MAX_LIN_VEL = 0.22 * 0.5
 
@@ -226,7 +226,7 @@ if __name__ == '__main__':
 										pose_type_string,\
 										awake_freq= 10,\
 										initial_movement_radius=0.8,
-										initial_movement_time=10,
+										initial_movement_time=0.1,
 										xlim=(0.4,2.4),\
 										ylim=(0.4,4.5),\
 										planning_dt = 4)	

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from RemotePCCodebase import prompt_pose_type_string,get_sensor_names,stop_twist
+from utils.RemotePCCodebase import prompt_pose_type_string,get_sensor_names,stop_twist
 
 import argparse
 import roslaunch

@@ -1,6 +1,5 @@
 import numpy as np
-from MotionGeneration import scaled_spline_motion
-
+from utils.MotionGeneration import scaled_spline_motion
 
 def LQR(As,Bs,Qs,Rs):
     n_state = As[0].shape[0]

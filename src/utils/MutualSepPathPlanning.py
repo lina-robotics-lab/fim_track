@@ -1,7 +1,7 @@
 from jax import jit, jacfwd
 import jax.numpy as jnp
 import numpy as np
-from regions import CircleInterior,Rect2D
+from utils.regions import CircleInterior,Rect2D
 
 def sep_func(ps):
 	
