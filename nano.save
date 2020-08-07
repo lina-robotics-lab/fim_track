@@ -1,4 +1,0 @@
-Demonstrating the behavior of projected gradient descent 
-
-The waypoints given to the mobile sensors are restricted in a 2-D rectangle 
-with xlim = (0,5) and ylim = (0,5)

@@ -43,8 +43,9 @@ class single_robot_controller(object):
 		self.waypoint_sub=rospy.Subscriber('/{}/waypoints'.format(self.robot_name),Float32MultiArray,self.waypoint_callback_)
 		self.vel_pub=rospy.Publisher('/{}/cmd_vel'.format(self.robot_name),Twist,queue_size=10)
 		
-		self.Q_strength=1
+		self.Q=np.array([[2,0,0],[0,2,0],[0,0,1]])
 		self.R_strength=1
+		self.R = np.array([[10,0],[0,1]])
 		
 
 	def waypoint_callback_(self,data):
@@ -56,7 +57,7 @@ class single_robot_controller(object):
 			yaw=self.listener.robot_yaw_stack[-1]
 			curr_x = np.array([loc[0],loc[1],yaw])
 			
-			uhat,_,_ =LQR_for_motion_mimicry(self.all_waypoints,self.planning_dt,curr_x,Q=np.eye(3)*self.Q_strength,R=np.eye(2)*self.R_strength)
+			uhat,_,_ =LQR_for_motion_mimicry(self.all_waypoints,self.planning_dt,curr_x,Q=self.Q,R=self.R)
 			self.lqr_u=uhat
 			self.curr_lqr_ind=0
 		self.remaining_waypoints=deque([self.all_waypoints[i,:] for i in range(len(self.all_waypoints))])
@@ -128,7 +129,7 @@ if __name__ == '__main__':
 		if arguments>=3:
 			kernel_algorithm = sys.argv[3]
 
-	planning_dt = 2;
+	planning_dt = 1;
 
 	controller=single_robot_controller(robot_name,pose_type_string,kernel_algorithm=kernel_algorithm,planning_dt=planning_dt)	
 	controller.start()

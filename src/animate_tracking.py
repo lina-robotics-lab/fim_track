@@ -49,6 +49,7 @@ def animate(i):
 	for key,val in log['sensor_locs'].items():
 		ind = min([i,len(val)-1])
 		plot_trajectory(ax,val[:ind],key,'')
+		print(val[-1])
 	
 	for key,val in log['waypoints'].items():
 		ind = min([i,len(val)-1])
@@ -64,7 +65,8 @@ def animate(i):
 
 frames = np.inf 
 log['target_locs'] = {}
-log['target_locs']['target_0']=np.array([[2.4,4.5] for i in range(len(log['sensor_locs']['mobile_sensor_1']))])
+t = len(log['sensor_locs'][list(log['sensor_locs'].keys())[0]])
+log['target_locs']['target_0']=np.array([[2.4,4.5] for i in range(t)])
 for key,val in log['target_locs'].items():
 	frames = int(np.min([len(val),frames]))	
 

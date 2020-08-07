@@ -94,8 +94,9 @@ if __name__ == '__main__':
 	# Specify the initial sensor poses and target poses here.
 	# Simplified pose format: [x,y,theta]. 
 	# The number of sensors and targets to use is automatically determined by the dimensions of poses passed in.
-	sensor_poses=[[1,1,-3.04],\
-	[1,1.5,-3.04],\
+	sensor_poses=[
+	# [1,1,-3.04],\
+	# [1,1.5,-3.04],\
 	[1,0.5,-3.04]]
 	target_poses=[[2.4,4.5,3.14/2]]
 

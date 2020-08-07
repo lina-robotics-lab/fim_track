@@ -30,7 +30,7 @@ def regularize_angle(theta):
     sin = np.sin(theta)
     return np.angle(cos+sin*1j)
  
-def LQR_for_motion_mimicry(waypoints,wakeup_dt,x_0,Q,R):
+def LQR_for_motion_mimicry(waypoints,planning_dt,x_0,Q,R):
     """
         We use time-invariant Q, R matrice for the compuation of LQR.
     """
@@ -40,7 +40,7 @@ def LQR_for_motion_mimicry(waypoints,wakeup_dt,x_0,Q,R):
 
     # # Get rid of the waypoints that are left-behind.
     waypoints = waypoints[np.argmin(np.linalg.norm(waypoints-x_0[:2],axis=1)):]
-    p,theta,v,omega,dsdt=scaled_spline_motion(waypoints,wakeup_dt)
+    p,theta,v,omega,dsdt=scaled_spline_motion(waypoints,planning_dt)
     
     if len(p)==0 or len(theta)==0:
         return [],[],[]
@@ -54,25 +54,25 @@ def LQR_for_motion_mimicry(waypoints,wakeup_dt,x_0,Q,R):
     n_input = ref_u.shape[1]
     n_ref_motion=len(p)
     I = np.eye(n_state)
-    def tank_drive_A(v,theta,wakeup_dt):
+    def tank_drive_A(v,theta,planning_dt):
         A = I + \
             np.array([
                 [0, 0, -v*np.sin(theta)],
                 [0,0, v*np.cos(theta)],
                 [0,0,0]
-            ])* wakeup_dt
+            ])* planning_dt
         return A
-    def tank_drive_B(theta,wakeup_dt):
+    def tank_drive_B(theta,planning_dt):
         B = np.array([
             [np.cos(theta),0],
             [np.sin(theta),0],
             [0,1]
-        ])*wakeup_dt
+        ])*planning_dt
         return B
     
     
-    As = [ tank_drive_A(v[k],theta[k],wakeup_dt) for k in range(n_ref_motion)]
-    Bs = [ tank_drive_B(theta[k],wakeup_dt) for k in range(n_ref_motion)]
+    As = [ tank_drive_A(v[k],theta[k],planning_dt) for k in range(n_ref_motion)]
+    Bs = [ tank_drive_B(theta[k],planning_dt) for k in range(n_ref_motion)]
     
     Qs = [Q for i in range(n_ref_motion)]
     Rs = [R for i in range(n_ref_motion-1)]

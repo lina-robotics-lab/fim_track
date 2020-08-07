@@ -1,6 +1,6 @@
 import numpy as np
 
-BURGER_MAX_LIN_VEL = 0.22
+BURGER_MAX_LIN_VEL = 0.22*0.8
 BURGER_MAX_ANG_VEL = 2.84
 
 def unscaled_spline_motion(waypoints,poly_order, space_dim,n_output):
