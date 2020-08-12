@@ -42,8 +42,10 @@ class simple_waypoint_generator(object):
 		self.robot_names=robot_names
 		self.xlim = xlim
 		self.ylim = ylim
-	
-		self.planning_timesteps = 30
+		
+		# planning_timesteps should be at least (1/self.awake_freq)/planning_dt so that single_robot_controller
+		# won't run out of waypoints between the awakenings of multi_robot_controller.
+		self.planning_timesteps = 20 
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
 		self.planning_dt = planning_dt
 		self.epsilon=0.5

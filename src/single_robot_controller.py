@@ -43,7 +43,7 @@ class single_robot_controller(object):
 		self.waypoint_sub=rospy.Subscriber('/{}/waypoints'.format(self.robot_name),Float32MultiArray,self.waypoint_callback_)
 		self.vel_pub=rospy.Publisher('/{}/cmd_vel'.format(self.robot_name),Twist,queue_size=10)
 		
-		self.Q=np.array([[2,0,0],[0,2,0],[0,0,1]])
+		self.Q=np.array([[10,0,0],[0,10,0],[0,0,1]])
 		self.R_strength=1
 		self.R = np.array([[10,0],[0,1]])
 		
@@ -129,7 +129,7 @@ if __name__ == '__main__':
 		if arguments>=3:
 			kernel_algorithm = sys.argv[3]
 
-	planning_dt = 1;
-
-	controller=single_robot_controller(robot_name,pose_type_string,kernel_algorithm=kernel_algorithm,planning_dt=planning_dt)	
+	awake_freq = 10
+	planning_dt = 1
+	controller=single_robot_controller(robot_name,pose_type_string,awake_freq=awake_freq,kernel_algorithm=kernel_algorithm,planning_dt=planning_dt)	
 	controller.start()

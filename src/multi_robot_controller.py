@@ -15,7 +15,7 @@ from utils.ConcentricPathPlanning import concentric_path_planning
 from utils.MutualSepPathPlanning import mutual_separation_path_planning
 from utils.regions import Rect2D
 
-BURGER_MAX_LIN_VEL = 0.22 * 0.5
+BURGER_MAX_LIN_VEL = 0.22 * 0.8
 
 
 class multi_robot_controller(object):
@@ -47,7 +47,9 @@ class multi_robot_controller(object):
 		self.initial_movement_radius = initial_movement_radius
 		self.initial_movement_time=initial_movement_time
 
-		self.planning_timesteps = 100
+		# planning_timesteps should be at least (1/self.awake_freq)/planning_dt so that single_robot_controller
+		# won't run out of waypoints between the awakenings of multi_robot_controller.
+		self.planning_timesteps = int((1/self.awake_freq)/planning_dt) * 10 
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
 		self.planning_dt = planning_dt
 		self.epsilon=0.5
@@ -220,15 +222,14 @@ if __name__ == '__main__':
 	robot_names=get_sensor_names()	
 
 	n_robots = len(robot_names)
-	
 
 	mlt_controller=multi_robot_controller(robot_names,\
 										pose_type_string,\
 										awake_freq= 10,\
 										initial_movement_radius=0.8,
-										initial_movement_time=0.1,
-										xlim=(0.4,2.4),\
-										ylim=(0.4,4.5),\
-										planning_dt = 4)	
+										initial_movement_time=80,
+										xlim=(0,2.4),\
+										ylim=(0,4.5),\
+										planning_dt = 1)	
 
 	mlt_controller.start()
