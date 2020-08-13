@@ -71,7 +71,7 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
             ps=candid_ps
             ps[insiders]=polar_projection(q,candid_ps,epsilon)[insiders] # Update ps.
             p_trajs.append(ps)
-            break # Exit the loop once some mobile sensor's trajectory reaches the circle.
+            # break # Exit the loop once some mobile sensor's trajectory reaches the circle.
         else:
             ps=candid_ps # Update ps.
             p_trajs.append(ps)

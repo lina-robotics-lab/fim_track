@@ -49,10 +49,10 @@ class multi_robot_controller(object):
 
 		# planning_timesteps should be at least (1/self.awake_freq)/planning_dt so that single_robot_controller
 		# won't run out of waypoints between the awakenings of multi_robot_controller.
-		self.planning_timesteps = int((1/self.awake_freq)/planning_dt) * 10 
+		self.planning_timesteps = 20 
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
 		self.planning_dt = planning_dt
-		self.epsilon=0.5
+		self.epsilon=0.1
 
 		# Data containers
 		self.curr_est_locs=dict()
@@ -227,7 +227,7 @@ if __name__ == '__main__':
 										pose_type_string,\
 										awake_freq= 10,\
 										initial_movement_radius=0.8,
-										initial_movement_time=80,
+										initial_movement_time=3,
 										xlim=(0,2.4),\
 										ylim=(0,4.5),\
 										planning_dt = 1)	
