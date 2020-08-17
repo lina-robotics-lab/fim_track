@@ -6,7 +6,7 @@ import numpy as np
 import sys
 from spin_and_collect import spin_and_collect
 from utils.RemotePCCodebase import calibrate_meas_coef as cc
-from utils.RemotePCCodebase import pose2xz
+from utils.RemotePCCodebase import toxy
 
 class calibrate_meas_coef:
 	def __init__(self):
@@ -23,10 +23,10 @@ class calibrate_meas_coef:
 		
 	def robot_pose_callback_(self,data):
 		# print(data.pose)
-		self.robot_pose=data.pose
+		self.robot_pose=data
 		
 	def target_pose_callback_(self,data):
-		self.target_pose=data.pose
+		self.target_pose=data
 
 	def light_callback_(self,data):
 		print(data.data)
@@ -50,8 +50,8 @@ class calibrate_meas_coef:
 				print(self.robot_pose)
 				print('target:',self.target_pose)
 				print('light:',self.light_readings)
-				self.robot_loc_stack.append(pose2xz(self.robot_pose))
-				self.target_loc_stack.append(pose2xz(self.target_pose))
+				self.robot_loc_stack.append(toxy(self.robot_pose))
+				self.target_loc_stack.append(toxy(self.target_pose))
 				self.light_reading_stack.append(np.array(self.light_readings))
 			rate.sleep()
 
@@ -79,7 +79,7 @@ if __name__ == '__main__':
 
 	position = 2
 	# Get the target name passed in by the user
-	target_namespace='Lamp'
+	target_namespace='target_0'
 	if arguments>=position:
 		target_namespace=sys.argv[position]
 

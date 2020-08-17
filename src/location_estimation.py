@@ -131,17 +131,16 @@ class location_estimation:
 		self.initial_movement_finished = finished.data
 	
 	
-	def start(self,target_name=None,save_data=False,trail_num=0):
+	def start(self,target_name=None,save_data=False,trail_num=0,reset_dynamic_filter_period = 5):
 		
 		
 		rate=rospy.Rate(self.awake_freq)
 
 		NUM_TARGET=1
 				
-
+		reset_time = 0
 		while (not rospy.is_shutdown()):
 			
-
 			# Gather the latest readings from listeners
 			for l in self.listeners:
 				# print(l.light_readings,l.robot_name,l.robot_pose)
@@ -174,12 +173,22 @@ class location_estimation:
 
 				# Initialize the dynamic filter if the initial movements from the sensors are finished.
 				if self.initial_movement_finished:
+
+					reset_time += 1/self.awake_freq
+					if reset_time>=reset_dynamic_filter_period:
+						reset_time = 0
+
 					for filter_alg in self.dynamic_filter_algs:
-						if self.dynamic_filters[filter_alg] is None:			
-							self.dynamic_filters[filter_alg]=getDynamicFilter(self.n_robots,NUM_TARGET,C1s,C0s,ks,bs,initial_guess=initial_guess,filterType=filter_alg)
+						if self.dynamic_filters[filter_alg] is None:		
+							self.dynamic_filters[filter_alg]=getDynamicFilter(self.n_robots,NUM_TARGET,C1s,C0s,ks,bs,initial_guess=initial_guess,filterType=filter_alg,xlim=self.xlim,ylim=self.ylim)
 							if not self.dynamic_filters[filter_alg] is None:
 								print('{} initialized'.format(filter_alg))
-								# print('initial_movement_finished',self.initial_movement_finished)
+						elif reset_time==0: # Reset the dynamic filters every xx seconds so that they have a chance of correcting from a divergent behavior.
+							self.dynamic_filters[filter_alg]=getDynamicFilter(self.n_robots,NUM_TARGET,C1s,C0s,ks,bs,initial_guess=initial_guess,filterType=filter_alg,xlim=self.xlim,ylim=self.ylim)
+							if not self.dynamic_filters[filter_alg] is None:
+								print('{} reset'.format(filter_alg))
+
+						
 
 
 				self.estimated_locs.append(est_loc)
@@ -226,5 +235,5 @@ if __name__=='__main__':
 	# qhint=None
 	
 	le=location_estimation(robot_names,pose_type_string,qhint=qhint,awake_freq=10,target_name=target_name)
-	le.start(target_name=target_name,trail_num=7)
+	le.start(target_name=target_name,trail_num=0,reset_dynamic_filter_period=200)
 

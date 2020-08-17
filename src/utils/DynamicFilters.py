@@ -19,6 +19,11 @@ Use self-built particle filter package
 '''
 from utils.ParticleFilterBasic import ParticleFilterBasic as PF
 
+'''
+Utility needed for projecting estimation back to the region of movement
+'''
+from utils.regions import Rect2D
+
 
 def single_meas_func(C1,C0,k,b,dist):
 	return k*jnp.power(dist-C1,b)+C0
@@ -39,7 +44,7 @@ def joint_meas_func(C1s,C0s,ks,bs,x,ps):
 
 	return single_meas_func(C1s,C0s,ks,bs,dists) 
 	
-def getDynamicFilter(num_sensors,num_targets,C1s,C0s,ks,bs,initial_guess=None,filterType='ekf'):
+def getDynamicFilter(num_sensors,num_targets,C1s,C0s,ks,bs,initial_guess=None,filterType='ekf',xlim=(0,0),ylim=(0,0)):
 	"""
 		We assume the coefficients for each mobile sensors can be different, so the
 		coefs passed in are in plural form.
@@ -50,7 +55,7 @@ def getDynamicFilter(num_sensors,num_targets,C1s,C0s,ks,bs,initial_guess=None,fi
 
 
 	meas_func=partial(joint_meas_func,C1s,C0s,ks,bs)# Freeze the coefficients, the signature becomes meas_func(x,ps)
-	return TargetTrackingSS(num_sensors,num_targets,meas_func,initial_guess=initial_guess,filterType=filterType)
+	return TargetTrackingSS(num_sensors,num_targets,meas_func,initial_guess=initial_guess,filterType=filterType,xlim=xlim,ylim=ylim)
 
 
 class TargetTrackingSS:
@@ -80,10 +85,12 @@ class TargetTrackingSS:
 			and meas_func takes in a num_targets x 2 vector x, and a num_sensors x 2 vector p.
 			The jacobian will be automatically calculated as dmeas_func/dx only. 
 	'''
-	def __init__(self, num_sensors,num_targets,meas_func, initial_guess=None, filterType='ekf'):
+	def __init__(self, num_sensors,num_targets,meas_func, initial_guess=None, filterType='ekf',xlim = (0,2.4),ylim=(0,4.5)):
             self.num_sensors=num_sensors
             self.num_targets=num_targets
             self.filterType=filterType
+            self.xlim = xlim
+            self.ylim = ylim
 
             n=2*self.num_targets # For each target, its state is a 4D vector, including its position and the derivative of its position, both in 2D of course.
             O=np.zeros((n,n))
@@ -98,8 +105,8 @@ class TargetTrackingSS:
             if filterType=='ekf':
                 self.filter=EKF(dim_x=4*num_targets,dim_z=num_sensors) # For each sensor there will be one scalar reading. So the dimension of output z is num_sensors.
                 self.filter.F=self.A # F is the state transition matrix.
-                # self.filter.Q = np.eye(4*num_targets) * 1 # Process noise matrix
-                # self.filter.R = np.eye(num_sensors) * 1 # Measurement noise matrix
+                # self.filter.Q = np.eye(4*num_targets) * 10 # Process noise matrix
+                self.filter.R = np.eye(num_sensors) * 100 # Measurement noise matrix
             elif filterType=='pf':
                 self.filter=PF(dim_x=4*num_targets, dim_z=num_sensors, sensor_std = 0.5, move_std = 0.1, N = 50)
             else:
@@ -132,14 +139,21 @@ class TargetTrackingSS:
 	def update_filters(self,new_ps, new_measurements):
             self.update_ps_(new_ps)
             #self.filter.update(new_measurements,self.dhxdx,self.hx)
+            region = Rect2D(self.xlim,self.ylim)
             if self.filterType=='ekf':
                 self.filter.update(new_measurements,self.dhxdx,self.hx)
+                # Perform projection onto the region of motion.
+                self.filter.x_post[:2] = region.project_point(self.filter.x_post[:2])
             elif self.filterType=='pf':
                 self.filter.update(new_measurements,new_ps, self.hx)
+                  # Perform projection onto the region of motion.
+                self.filter.x_post[:2] = region.project_point(self.filter.x_post[:2])
             else:
                 self.filter.update(new_measurements,self.dhxdx,self.hx)
 
             self.filter.predict()
+             # Perform projection onto the region of motion.
+            self.filter.x_prior[:2]=region.project_point(self.filter.x_prior[:2])
 	
 	def update_ps_(self,new_ps): 
 		'''

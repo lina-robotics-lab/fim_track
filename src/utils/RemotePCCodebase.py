@@ -185,6 +185,8 @@ def top_n_mean(readings,n):
         on Turtlebots into a single scalar value, representing the overall influence of 
         the light source to the Turtlebots.
     """
+    if len(readings.shape)==1:
+        return readings
 
     rowwise_sort=np.sort(readings,axis=1)
     return np.mean(rowwise_sort[:,-n:],axis=1)
@@ -232,8 +234,8 @@ def calibrate_meas_coef(robot_loc,target_loc,light_readings,fit_type='light_read
     ls=[]
     ks=[]
     bs=[]
-    C_1s= np.linspace(-1,np.min(dists)-0.01,100)
-    C_0s=np.linspace(-1,np.min(light_strengths)-0.01,100)
+    C_1s= np.linspace(-10,np.min(dists)-0.01,100)
+    C_0s=np.linspace(-10,np.min(light_strengths)-0.01,100)
     ls=[]
     mls=[]
     for C_1 in C_1s:

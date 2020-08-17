@@ -34,7 +34,7 @@ class multi_robot_controller(object):
 
 	"""
 	def __init__(self, robot_names,pose_type_string,\
-						awake_freq=1,initial_movement_radius=0.5,initial_movement_time=5,xlim=(0.0,10.0),ylim=(0,10.0),planning_dt=1):
+						awake_freq=1,initial_movement_radius=0.5,initial_movement_time=5,xlim=(0.0,10.0),ylim=(0,10.0),planning_dt=1,epsilon=0.1):
 		self.robot_names=robot_names
 		self.awake_freq=awake_freq
 		self.n_robots=len(robot_names)
@@ -52,7 +52,7 @@ class multi_robot_controller(object):
 		self.planning_timesteps = 20 
 		self.max_linear_speed = BURGER_MAX_LIN_VEL
 		self.planning_dt = planning_dt
-		self.epsilon=0.1
+		self.epsilon=epsilon
 
 		# Data containers
 		self.curr_est_locs=dict()
@@ -70,7 +70,7 @@ class multi_robot_controller(object):
 		self.est_algs=[\
 						'multi_lateration',\
 						# 'intersection',\
-						# 'ekf',\
+						'ekf',\
 						# 'pf',\
 						# 'actual_loc'\
 						]
@@ -230,6 +230,7 @@ if __name__ == '__main__':
 										initial_movement_time=3,
 										xlim=(0,2.4),\
 										ylim=(0,4.5),\
-										planning_dt = 1)	
+										planning_dt = 1,\
+										epsilon = 0.3)	
 
 	mlt_controller.start()
