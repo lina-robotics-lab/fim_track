@@ -229,7 +229,7 @@ def loss(C_1,dists,light_strengths,C_0=0,fit_type='light_readings',loss_type='rm
 ## The once and for all parameter calibration function.
 def calibrate_meas_coef(robot_loc,target_loc,light_readings,fit_type='light_readings',loss_type='rmse'):
     dists=np.sqrt(np.sum((robot_loc-target_loc)**2,axis=1))
-    light_strengths=top_n_mean(light_readings,2)
+    light_strengths=top_n_mean(light_readings,4)
     
     ls=[]
     ks=[]

@@ -77,7 +77,7 @@ class location_estimation:
 						
 				lookback_len=np.min([look_back,len(l.light_reading_stack),len(l.robot_loc_stack)])
 
-				meas=top_n_mean(np.array(l.light_reading_stack[-lookback_len:]),2)
+				meas=top_n_mean(np.array(l.light_reading_stack[-lookback_len:]),4)
 
 				rh=rhat(meas,l.C1,l.C0,l.k,l.b)
 

@@ -12,7 +12,7 @@ class spin_and_collect(object):
 		self.pub_=None
 		self.reading_records=[]
 		self.node_init_=False
-		self.spin_angular_vel_=2
+		self.spin_angular_vel_=1
 
 	# Public methods
 	# Each spin_and_collect object contains its one and only node.
@@ -127,7 +127,8 @@ if __name__=='__main__':
 	sc.init_node()	
 	sc.spin_and_collect(robot_namespace,total_time)
 	
-	print(np.array(sc.reading_records))
+	print('Max Reading:',np.max(sc.reading_records))
+	print('Min Reading:',np.min(sc.reading_records))
 	
 	np.savetxt('light_readings_{}.txt'.format(robot_namespace),np.array(sc.reading_records),delimiter=',')
-	print('light_readings_{}.txt'.format(robot_namespace))
+	# print('light_readings_{}.txt'.format(robot_namespace))
