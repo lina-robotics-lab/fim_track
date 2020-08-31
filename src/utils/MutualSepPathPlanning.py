@@ -34,13 +34,12 @@ def mutual_separation_path_planning(R,ps,n_p,n_timesteps,max_linear_speed,dt,sca
 
 			
 			# Slightly move the CoM towards the direction where signal is the strongest.
-			weights = np.abs(scalar_readings)/np.sum(np.abs(scalar_readings))
+			weights = np.abs(scalar_readings)/np.sum(np.abs(scalar_readings)) # Create a vector of convex combination weights.
 
 			CoM = np.mean(ps,axis=0)
 			weighted_CoM = np.sum(ps*weights[:,np.newaxis],axis=0)
 			diff = weighted_CoM-CoM
-			# print(weighted_CoM,CoM)
-			print(np.sum(weights))
+		
 			# CoM_vel = CoM_motion_gain * np.mean(np.linalg.norm(ps-CoM,axis=1))
 			CoM_vel = CoM_motion_gain * max_linear_speed
 			CoM += diff/np.linalg.norm(diff) * CoM_vel * dt
