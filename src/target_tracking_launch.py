@@ -88,8 +88,9 @@ if __name__ == '__main__':
 	local_track_algs = dict()
 	local_track_algs['l']='LQR'
 	local_track_algs['t']='TurnAndGo'
+	local_track_algs['n']='DoNothing'
 
-	resp=input('\n'.join(['Local Tracking Algorithm To Use','l=>LQR','t=>TurnAndGo:']))
+	resp=input('\n'.join(['Local Tracking Algorithm To Use','l=>LQR','t=>TurnAndGo','n=>DoNothing:']))
 
 
 	launch_tracking_suite(pose_type_string,n_robots,local_track_algs[resp],sensor_names)

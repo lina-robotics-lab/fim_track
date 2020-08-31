@@ -13,6 +13,7 @@ from utils.dLdp import analytic_dLdp,dLdp,L,dSdp
 from utils.FIMPathPlanning import FIM_ascent_path_planning
 from utils.ConcentricPathPlanning import concentric_path_planning
 from utils.MutualSepPathPlanning import mutual_separation_path_planning
+from utils.StraightLinePathPlanning import straight_line_path_planning
 from utils.regions import Rect2D
 
 BURGER_MAX_LIN_VEL = 0.22 * 0.8
@@ -153,7 +154,9 @@ class multi_robot_controller(object):
 														self.planning_timesteps,\
 														self.max_linear_speed,\
 														self.planning_dt,\
-														scalar_readings)
+														scalar_readings,\
+														xlim = self.xlim,\
+														ylim = self.ylim)
 				# print('Reached',radius_reached)
 				self.initial_movement_finished = sim_time>=self.initial_movement_time
 			else:
@@ -186,13 +189,16 @@ class multi_robot_controller(object):
 						
 						# f_dLdp=dSdp(C1s=C1s,C0s=C0s,ks=ks,bs=bs)
 						
-						self.waypoints=FIM_ascent_path_planning(f_dLdp,q,ps,self.n_robots,\
-																self.planning_timesteps,\
-																self.max_linear_speed,\
-																self.planning_dt,\
-																self.epsilon,\
-																Rect2D(self.xlim,self.ylim))
-					
+						# self.waypoints=FIM_ascent_path_planning(f_dLdp,q,ps,self.n_robots,\
+						# 										self.planning_timesteps,\
+						# 										self.max_linear_speed,\
+						# 										self.planning_dt,\
+						# 										self.epsilon,\
+						# 										Rect2D(self.xlim,self.ylim))
+						
+						self.waypoints = straight_line_path_planning(q,ps,self.n_robots,self.planning_timesteps)
+			
+
 			self.initial_movement_pub.publish(self.initial_movement_finished)
 			self.waypoints=self.waypoints.reshape(-1,self.n_robots,2)
 			
@@ -227,10 +233,13 @@ if __name__ == '__main__':
 										pose_type_string,\
 										awake_freq= 10,\
 										initial_movement_radius=0.8,
-										initial_movement_time=3,
-										xlim=(0,2.4),\
-										ylim=(0,4.5),\
+										initial_movement_time=120,
+										# xlim=(0,2.4),\
+										# ylim=(0,4.5),\
+										xlim=(0,np.inf),\
+										ylim=(0,np.inf),\
+										
 										planning_dt = 1,\
-										epsilon = 0.3)	
+										epsilon = 0.6)	
 
 	mlt_controller.start()

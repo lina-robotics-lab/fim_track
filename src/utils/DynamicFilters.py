@@ -106,7 +106,7 @@ class TargetTrackingSS:
                 self.filter=EKF(dim_x=4*num_targets,dim_z=num_sensors) # For each sensor there will be one scalar reading. So the dimension of output z is num_sensors.
                 self.filter.F=self.A # F is the state transition matrix.
                 # self.filter.Q = np.eye(4*num_targets) * 10 # Process noise matrix
-                self.filter.R = np.eye(num_sensors) * 100 # Measurement noise matrix
+                # self.filter.R = np.eye(num_sensors) * 1 # Measurement noise matrix
             elif filterType=='pf':
                 self.filter=PF(dim_x=4*num_targets, dim_z=num_sensors, sensor_std = 0.5, move_std = 0.1, N = 50)
             else:
@@ -125,7 +125,8 @@ class TargetTrackingSS:
 	
 	def update_and_estimate_loc(self,ps,meas):
 	    
-	    self.update_filters(ps,meas)
+	    if not np.any(meas == np.inf):
+		    self.update_filters(ps,meas)
 
 	    return self.current_state_corrected()[:2]
 

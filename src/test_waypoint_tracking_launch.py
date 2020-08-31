@@ -69,6 +69,7 @@ def launch_tracking_suite(pose_type_string,n_robots,local_track_alg,sensor_names
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--pose_type_string")
+	parser.add_argument("-namespace")
 	args = parser.parse_args()
 	
 	if not args.pose_type_string:
@@ -76,7 +77,10 @@ if __name__ == '__main__':
 	else:
 		pose_type_string=args.pose_type_string
 	
-	sensor_names = get_sensor_names()
+	if not args.namespace:
+		sensor_names = get_sensor_names()
+	else:
+		sensor_names = [args.namespace]
 
 	n_robots = len(sensor_names)
 	print("{} Mobile Sensors Detected".format(n_robots))

@@ -7,6 +7,7 @@ auto-differentiation.
 """
 
 import numpy as np
+from utils.MutualSepPathPlanning import sep_func
 def analytic_L(q,ps,C1s,C0s,ks,bs,sigma=1):
     
     n_p=len(ps)
@@ -144,7 +145,9 @@ def dLdp(C1s,C0s,ks,bs,sigma=1):
     
     # Construct dLdP(q,ps)
 
-    return lambda q,ps: -np.array(jnp.trace(dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1))
+
+
+    return lambda q,ps: -np.array(jnp.trace(dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1)) 
 def dSdp(C1s,C0s,ks,bs,sigma=1):
 
     """

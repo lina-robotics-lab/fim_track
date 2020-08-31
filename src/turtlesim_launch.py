@@ -6,6 +6,7 @@ import subprocess
 import rospkg
 import os
 from turtlesim.srv import Spawn,Kill
+import numpy as np
 
 
 
@@ -94,11 +95,33 @@ if __name__ == '__main__':
 	# Specify the initial sensor poses and target poses here.
 	# Simplified pose format: [x,y,theta]. 
 	# The number of sensors and targets to use is automatically determined by the dimensions of poses passed in.
+	
+
+	############ Setup for source seeking experiment
+	target_loc = [6.0,6.0]
+	target_poses=[[target_loc[0],target_loc[1],3.14/2]]
+	
 	sensor_poses=[
-	# [1,1,-3.04],\
-	[1,1.5,-3.04],\
-	[1,0.5,-3.04]]
-	target_poses=[[2.4,4.5,3.14/2]]
+	[2,2,-3.04],\
+	[1,2,-3.04],\
+	[3,2,-3.04]]
+	
+
+	############ Setup for Location Estimation Experiment
+
+	# target_loc = np.array([1.2,1.2])
+	# radius = 1
+	
+	# sensor_angles = [0,-np.pi/3,np.pi/3]
+	# sensor_angles = [0,np.pi*2/3,np.pi*4/3]
+	# sensor_angles = [0,-np.pi/6,np.pi/6]
+
+	# sensor_locs = target_loc + radius*np.array([np.cos(sensor_angles), np.sin(sensor_angles)]).T
+
+	# target_poses=[[target_loc[0],target_loc[1],0]]
+
+	# sensor_poses=np.vstack([sensor_locs.T,np.zeros(3)]).T
+
 
 	noise_level=input('Additive Gaussian Noise Std(a non-negative number):')
 	rospy.set_param('noise_level',float(noise_level))

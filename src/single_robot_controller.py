@@ -84,6 +84,8 @@ class single_robot_controller(object):
 					self.remaining_waypoints.popleft()
 				else: # If the returned vel_msg is not stop_twist, then exit the loop.
 					break
+		elif self.kernel_algorithm=='DoNothing':
+				vel_msg = stop_twist()
 					
 		return vel_msg
 	

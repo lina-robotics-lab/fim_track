@@ -16,7 +16,7 @@ def plot_trajectory(ax,traj,name,marker):
 		direction = traj[i+1,:]-traj[i,:]
 		return traj[i,0],traj[i,1], direction[0],direction[1]
 	
-	ax.plot(traj[:,0],traj[:,1],marker,label=name)
+	ax.scatter(traj[:,0],traj[:,1],label=name,marker=marker)
 	
 
 fig = plt.figure()
@@ -48,13 +48,15 @@ def animate(i):
     
 	for key,val in log['sensor_locs'].items():
 		ind = min([i,len(val)-1])
-		plot_trajectory(ax,val[max([ind-4,0]):ind],key,'')
-		print(val[-1])
+		plot_trajectory(ax,val[max([ind-4,0]):ind],key,'.')
+		# plot_trajectory(ax,val,key,'*')
 	
-	# for key,val in log['waypoints'].items():
-	# 	ind = min([i,len(val)-1])
-	# 	# print(len(val),key)
-	# 	plot_trajectory(ax,val[ind],"waypoints for {}".format(key),'+')
+		# print(val[-1])
+	
+	for key,val in log['waypoints'].items():
+		ind = min([i,len(val)-1])
+		# print(len(val),key)
+		plot_trajectory(ax,val[ind],"waypoints for {}".format(key),'+')
 	
 	# ax.set_title('Hill Climbing+ Estimation & FIM in Real Life\nFrame {}'.format(i))
 	ax.set_title('Frame {}'.format(i))
@@ -76,6 +78,6 @@ for key,val in log['target_locs'].items():
 # call the animator. blit=True means only re-draw the parts that have changed.
 # But if blit=True, the animate() function must return the list of artists.
 # If blit = False, the animate() function does not have to return anything. Plus, redrawing the who canvas is cheap. 
-anim = animation.FuncAnimation(fig, animate, frames=frames, interval=100, blit=False)
+anim = animation.FuncAnimation(fig, animate, frames=frames, interval=500, blit=False)
 # Change the (x,y) value in bbox_to_anchor argument to change the position of the legend box
 plt.show()

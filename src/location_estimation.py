@@ -22,6 +22,7 @@ class location_estimation:
 
 		robot_coef_dict=dict({r:np.zeros((4,)) for r in robot_names})
 		
+		self.qhint = qhint
 		self.xlim = xlim
 		self.ylim = ylim		
 		self.n_robots=len(robot_names)
@@ -169,8 +170,10 @@ class location_estimation:
 				
 				# Set the initial guess of the dynamic filter to be the current est_loc.
 				# It comes from multi-lateration or intersection method.
-				initial_guess = est_loc['multi_lateration'].reshape(2,)
-
+				if self.qhint is None:
+					initial_guess = est_loc['multi_lateration'].reshape(2,)
+				else:
+					initial_guess = self.qhint
 				# Initialize the dynamic filter if the initial movements from the sensors are finished.
 				if self.initial_movement_finished:
 
@@ -231,9 +234,15 @@ if __name__=='__main__':
 	# target_name=None
 
 	
-	qhint=np.array([0.0,0.0])
-	# qhint=None
+	# qhint=None # Means we are using multi-lateration as the initial guess
+	qhint=np.array([3.0,4.0]) # Means we are using the given qhint as the initial guess
+
 	
-	le=location_estimation(robot_names,pose_type_string,qhint=qhint,awake_freq=10,target_name=target_name)
-	le.start(target_name=target_name,trail_num=0,reset_dynamic_filter_period=200)
+	xlim=(0,10)
+	ylim=(0,10)
+	# xlim=(0,2.4)
+	# ylim=(0,4.5)
+	
+	le=location_estimation(robot_names,pose_type_string,qhint=qhint,awake_freq=10,target_name=target_name,xlim=xlim,ylim = ylim)
+	le.start(target_name=target_name,trail_num=0,reset_dynamic_filter_period=10000)
 
