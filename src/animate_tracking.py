@@ -32,8 +32,8 @@ ax.set_aspect('equal')
 def animate(i):
 	ax.clear()
 	
-	ax.set_xlim((-1,5))
-	ax.set_ylim((-1,5))
+	ax.set_xlim((0,10))
+	ax.set_ylim((0,10))
 
 	ax.set_aspect('equal')
 
