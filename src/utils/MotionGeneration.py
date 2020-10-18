@@ -12,7 +12,6 @@ def unscaled_spline_motion(waypoints,poly_order, space_dim,n_output):
         """
         if waypoints.shape[1]!=space_dim:
             waypoints=waypoints.T
-
         assert(waypoints.shape[1]==space_dim)
 
         n = waypoints.shape[0]
@@ -83,13 +82,11 @@ def unscaled_spline_motion(waypoints,poly_order, space_dim,n_output):
     omega = (pDDot[:,1]*pDot[:,0]-pDDot[:,0]*pDot[:,1])/np.power(v,2)
     # The angular velocity, rotating counter-clockwise as positive. shape=(n_waypoints,)
     return p,pDot,pDDot,theta,v,omega
-def scaled_spline_motion(waypoints,planning_dt,poly_order=3,space_dim=2):
+def scaled_spline_motion(waypoints,planning_dt,Vm = BURGER_MAX_LIN_VEL,Om=BURGER_MAX_ANG_VEL,poly_order=3,space_dim=2):
     """
         The synchronized max uniform speed scheduling.
         space_dim: the dimension of space. Normally 2 or 3.
     """
-    Vm = BURGER_MAX_LIN_VEL
-    Om = BURGER_MAX_ANG_VEL
     
     
     # Prepare the data for calculating nstar

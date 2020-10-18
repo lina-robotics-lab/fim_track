@@ -53,7 +53,7 @@ class CircleInterior(Region):
 class CircleExterior(Region):
 	"""CircleExterior. The only difference is a change of inequality direction in the project point method."""
 	def __init__(self, origin, radius):
-		super(CircleInterior, self).__init__()
+		super(CircleExterior, self).__init__()
 		self.origin = origin
 		self.radius = radius
 

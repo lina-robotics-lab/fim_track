@@ -52,8 +52,8 @@ class virtual_sensor(object):
 		self.target_angles=dict({ns:None for ns in target_namespaces})
 		self.target_poses_buffer=dict({ns:None for ns in target_namespaces})
 	
-		self.raw_light_strengths=dict({ns:None for ns in target_namespaces})	
-		self.raw_light_strengths_buffer=dict({ns:None for ns in target_namespaces})	
+		self.raw_light_strengths=dict({ns:1 for ns in target_namespaces})	
+		self.raw_light_strengths_buffer=dict({ns:1 for ns in target_namespaces})	
 
 		self.sensor_readings=np.zeros(num_sensors)
 		

@@ -5,7 +5,7 @@ from functools import partial
 import numpy as np
 import pickle as pkl
 
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32MultiArray,Float32
 
 from utils.RemotePCCodebase import get_sensor_names,get_target_names,prompt_pose_type_string,toxy,timestamp
 from robot_listener import robot_listener
@@ -27,7 +27,11 @@ class logger(object):
 		self.sensor_locs = dict({r:[] for r in sensor_names})
 
 		self.curr_waypoints = dict()
-		self.waypoint_log = dict({r:[] for r in sensor_names})
+
+		self.waypoint_log = dict({r:[] for r in sensor_names+target_names})
+
+		self.scalar_readings = dict()
+		self.scalar_readings_log = dict({r:[] for r in sensor_names})
 
 
 		## ROS setups
@@ -53,6 +57,19 @@ class logger(object):
 			rospy.Subscriber('/{}/waypoints'.format(r),Float32MultiArray,\
 							partial(self.waypoint_callback_,sensor_name=r))
 		
+
+		for r in target_names:
+			rospy.Subscriber('/{}/waypoints'.format(r),Float32MultiArray,\
+							partial(self.waypoint_callback_,sensor_name=r))
+		
+		# Scalar reading subscribers
+		self.scalar_reading_sub = dict()
+		for name in sensor_names:
+			self.scalar_reading_sub[name]=rospy.Subscriber('/{}/scalar_readings'.format(name),Float32,partial(self.scalar_reading_callback_,name = name))
+		
+	def scalar_reading_callback_(self,data,name):
+		self.scalar_readings[name]= data.data
+
 	def est_loc_callback_(self,data,tag):
 		self.curr_est_locs[tag]=np.array(data.data)
 	
@@ -77,6 +94,7 @@ class logger(object):
 		logs['target_locs'] = stack_items(self.target_locs)
 
 		logs['waypoints'] = self.waypoint_log
+		logs['scalar_readings'] = stack_items(self.scalar_readings_log)
 
 		with open(filepath,'wb') as file:
 			pkl.dump(logs,file)
@@ -106,6 +124,11 @@ class logger(object):
 			for key,val in self.curr_waypoints.items():
 				if not val is None:
 					self.waypoint_log[key].append(val)
+			
+			# Log scalar readings
+			for key,val in self.scalar_readings.items():
+				if not val is None:
+					self.scalar_readings_log[key].append(val)
 
 			self.save_data(filepath)
 			rate.sleep()
@@ -131,7 +154,9 @@ def main(argv):
 	log = logger(sensor_names,target_names,pose_type_string)
 
 	filename = 'track_log_data'
-	filepath = "/home/tianpeng/{}.pkl".format(filename)
+	filepath = '/home/tianpeng/Link to Source Seeking Paper Draft/Figure Plotting Workspace/Experiment V/{}.pkl'.format(filename)
+
+	# filepath = "/home/tianpeng/{}.pkl".format(filename)
 		
 	log.start(filepath=filepath)
 

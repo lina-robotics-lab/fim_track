@@ -55,7 +55,7 @@ def animate(i):
 	
 	for key,val in log['waypoints'].items():
 		ind = min([i,len(val)-1])
-		# print(len(val),key)
+		print(len(val),key)
 		plot_trajectory(ax,val[ind],"waypoints for {}".format(key),'+')
 	
 	# ax.set_title('Hill Climbing+ Estimation & FIM in Real Life\nFrame {}'.format(i))

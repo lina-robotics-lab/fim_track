@@ -1,6 +1,9 @@
 import numpy as np
 from utils.MotionGeneration import scaled_spline_motion
 
+
+BURGER_MAX_LIN_VEL = 0.22*0.8
+BURGER_MAX_ANG_VEL = 2.84
 def LQR(As,Bs,Qs,Rs):
     n_state = As[0].shape[0]
     n_ref_motion = len(As)
@@ -30,7 +33,7 @@ def regularize_angle(theta):
     sin = np.sin(theta)
     return np.angle(cos+sin*1j)
  
-def LQR_for_motion_mimicry(waypoints,planning_dt,x_0,Q,R):
+def LQR_for_motion_mimicry(waypoints,planning_dt,x_0,Q,R,Vm = BURGER_MAX_LIN_VEL,Om=BURGER_MAX_ANG_VEL):
     """
         We use time-invariant Q, R matrice for the compuation of LQR.
     """
@@ -40,7 +43,7 @@ def LQR_for_motion_mimicry(waypoints,planning_dt,x_0,Q,R):
 
     # # Get rid of the waypoints that are left-behind.
     waypoints = waypoints[np.argmin(np.linalg.norm(waypoints-x_0[:2],axis=1)):]
-    p,theta,v,omega,dsdt=scaled_spline_motion(waypoints,planning_dt)
+    p,theta,v,omega,dsdt=scaled_spline_motion(waypoints,planning_dt,Vm,Om)
     
     if len(p)==0 or len(theta)==0:
         return [],[],[]
