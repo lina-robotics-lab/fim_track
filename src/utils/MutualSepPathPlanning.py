@@ -2,18 +2,29 @@ from jax import jit, jacfwd
 import jax.numpy as jnp
 import numpy as np
 from utils.regions import CircleInterior,Rect2D
-
+"""
+	Movement direction calculation follows a simplified version of equation (10) in
+	
+	Moore, B. J., & Canudas-de-Wit, C. (2010). Source seeking via collaborative measurements by a circular formation of agents. Proceedings of the 2010 American Control Conference, 6417–6422. https://doi.org/10.1109/ACC.2010.5531473
+   
+	Different from Moore et al., we achieve a equi-angular circular formation by doing projected gradient ascent of trace(separation matrix) on a circle.
+	
+	We then move the center of the circle using the formula in equation (10) prescribed by Moore et al.
+""" 
 def sep_func(ps):
 	
 	CoM = jnp.mean(ps,axis=0)
 	A = ps-CoM
 	return jnp.linalg.det(A.T.dot(A))
 
-def mutual_separation_path_planning(R,ps,n_p,n_timesteps,max_linear_speed,dt,scalar_readings,xlim = (0,2.4),ylim = (0,4.5),CoM_motion_gain=2):
+def mutual_separation_path_planning(R,ps,n_p,n_timesteps,\
+	max_linear_speed,dt,scalar_readings,xlim = (0,2.4),ylim = (0,4.5),CoM_motion_gain=2,\
+	f_dLdp=None):
 	step_size = max_linear_speed*dt
 	ps=ps.reshape(-1,2)
 
-	f_dLdp = jit(jacfwd(sep_func))
+	if f_dLdp is None:
+		f_dLdp = jit(jacfwd(sep_func))
 	p_trajs=[]
 	reached=False
 	for i in range(n_timesteps):
