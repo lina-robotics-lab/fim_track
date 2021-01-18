@@ -4,7 +4,6 @@ import pickle as pkl
 class logger(object):
 	"""Data logger for the experiment"""
 	def __init__(self, sensor_names,target_names,virtual_leader_names=[]):
-		super(logger, self).__init__()
 		## Data containers
 		self.est_loc_tag=['multi_lateration','intersection','ekf','pf']
 		
@@ -13,6 +12,8 @@ class logger(object):
 		self.src_locs = dict({r:[] for r in target_names})
 		self.sensor_locs = dict({r:[] for r in sensor_names})
 		self.virtual_leader_locs = dict({r:[] for r in virtual_leader_names})
+
+		self.comm_network = []
 
 
 	def export(self):
@@ -31,6 +32,7 @@ class logger(object):
 		logs['sensor_locs'] = stack_items(self.sensor_locs)
 		logs['src_locs'] = stack_items(self.src_locs)
 		logs['virtual_leader_locs']=stack_items(self.virtual_leader_locs)
+		logs['comm_network']=self.comm_network
 		# logs['scalar_readings'] = stack_items(self.scalar_readings_log)
 
 		return logs 
