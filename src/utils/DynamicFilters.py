@@ -86,49 +86,49 @@ class TargetTrackingSS:
 			The jacobian will be automatically calculated as dmeas_func/dx only. 
 	'''
 	def __init__(self, num_sensors,num_targets,meas_func, initial_guess=None, filterType='ekf',xlim = (0,2.4),ylim=(0,4.5)):
-            self.num_sensors=num_sensors
-            self.num_targets=num_targets
-            self.filterType=filterType
-            self.xlim = xlim
-            self.ylim = ylim
+			self.num_sensors=num_sensors
+			self.num_targets=num_targets
+			self.filterType=filterType
+			self.xlim = xlim
+			self.ylim = ylim
 
-            n=2*self.num_targets # For each target, its state is a 4D vector, including its position and the derivative of its position, both in 2D of course.
-            O=np.zeros((n,n))
-            I=np.eye(n)
-            self.A=np.vstack([np.hstack([I,I]),np.hstack([O,I])])
+			n=2*self.num_targets # For each target, its state is a 4D vector, including its position and the derivative of its position, both in 2D of course.
+			O=np.zeros((n,n))
+			I=np.eye(n)
+			self.A=np.vstack([np.hstack([I,I]),np.hstack([O,I])])
 
-            self.meas_func=meas_func
+			self.meas_func=meas_func
 
-            self.ps=np.zeros((self.num_sensors,2))
+			self.ps=np.zeros((self.num_sensors,2))
 
-            # Initialize the filter object
-            if filterType=='ekf':
-                self.filter=EKF(dim_x=4*num_targets,dim_z=num_sensors) # For each sensor there will be one scalar reading. So the dimension of output z is num_sensors.
-                self.filter.F=self.A # F is the state transition matrix.
-                # self.filter.Q = np.eye(4*num_targets) * 10 # Process noise matrix
-                # self.filter.R = np.eye(num_sensors) * 1 # Measurement noise matrix
-            elif filterType=='pf':
-                self.filter=PF(dim_x=4*num_targets, dim_z=num_sensors, sensor_std = 0.5, move_std = 0.1, N = 50)
-            else:
-                self.filter=None
-                print('{} is not yet supported'.format(filterType))
+			# Initialize the filter object
+			if filterType=='ekf':
+				self.filter=EKF(dim_x=4*num_targets,dim_z=num_sensors) # For each sensor there will be one scalar reading. So the dimension of output z is num_sensors.
+				self.filter.F=self.A # F is the state transition matrix.
+				# self.filter.Q = np.eye(4*num_targets) * 10 # Process noise matrix
+				# self.filter.R = np.eye(num_sensors) * 1 # Measurement noise matrix
+			elif filterType=='pf':
+				self.filter=PF(dim_x=4*num_targets, dim_z=num_sensors, sensor_std = 0.5, move_std = 0.1, N = 50)
+			else:
+				self.filter=None
+				print('{} is not yet supported'.format(filterType))
 
-            if initial_guess is None:
-                    self.filter.x=np.zeros(self.num_targets*4)
-            else:
-                    if filterType=='ekf':
-                            self.filter.x=np.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
-                    elif filterType=='pf':
-                            padded = np.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
-                            self.filter.init_gaussian(padded, np.ones(4*num_targets)*10)
+			if initial_guess is None:
+					self.filter.x=np.zeros(self.num_targets*4)
+			else:
+					if filterType=='ekf':
+							self.filter.x=np.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
+					elif filterType=='pf':
+							padded = np.pad(initial_guess,(0,4-len(initial_guess)),'constant',constant_values=0)
+							self.filter.init_gaussian(padded, np.ones(4*num_targets)*10)
 
 	
 	def update_and_estimate_loc(self,ps,meas):
-	    
-	    if not np.any(meas == np.inf):
-		    self.update_filters(ps,meas)
+		
+		if not np.any(meas == np.inf):
+			self.update_filters(ps,meas)
 
-	    return self.current_state_corrected()[:2]
+		return self.current_state_corrected()[:2]
 
 
 	def current_state_corrected(self):
@@ -138,23 +138,25 @@ class TargetTrackingSS:
 		return self.filter.x_prior
 	
 	def update_filters(self,new_ps, new_measurements):
-            self.update_ps_(new_ps)
-            #self.filter.update(new_measurements,self.dhxdx,self.hx)
-            region = Rect2D(self.xlim,self.ylim)
-            if self.filterType=='ekf':
-                self.filter.update(new_measurements,self.dhxdx,self.hx)
-                # Perform projection onto the region of motion.
-                self.filter.x_post[:2] = region.project_point(self.filter.x_post[:2])
-            elif self.filterType=='pf':
-                self.filter.update(new_measurements,new_ps, self.hx)
-                  # Perform projection onto the region of motion.
-                self.filter.x_post[:2] = region.project_point(self.filter.x_post[:2])
-            else:
-                self.filter.update(new_measurements,self.dhxdx,self.hx)
+			print(self.filter.P)
+			self.update_ps_(new_ps)
+			#self.filter.update(new_measurements,self.dhxdx,self.hx)
+			region = Rect2D(self.xlim,self.ylim)
+			if self.filterType=='ekf':
+				self.filter.update(new_measurements,self.dhxdx,self.hx)
+				# Perform projection onto the region of motion.
+				self.filter.x_post[:2] = region.project_point(self.filter.x_post[:2])
+			elif self.filterType=='pf':
+				self.filter.update(new_measurements,new_ps, self.hx)
+				  # Perform projection onto the region of motion.
+				self.filter.x_post[:2] = region.project_point(self.filter.x_post[:2])
+			else:
+				self.filter.update(new_measurements,self.dhxdx,self.hx)
 
-            self.filter.predict()
-             # Perform projection onto the region of motion.
-            self.filter.x_prior[:2]=region.project_point(self.filter.x_prior[:2])
+			self.filter.predict()
+			 # Perform projection onto the region of motion.
+			self.filter.x_prior[:2]=region.project_point(self.filter.x_prior[:2])
+
 	
 	def update_ps_(self,new_ps): 
 		'''
@@ -167,6 +169,7 @@ class TargetTrackingSS:
 	
 	# Use jax to automatically compute the jacobian of measurement function, with respect to state only.
 	def dhxdx(self,x):
-		return jacfwd(self.hx)(x)
+		C=jacfwd(self.hx)(x)
+		return C
 	
 	
