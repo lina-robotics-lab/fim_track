@@ -111,6 +111,23 @@ def FIM(C1s,C0s,ks,bs,sigma=1):
     # pdb.set_trace()
     return lambda q,ps:1/(jnp.power(sigma,2)) *  dHdq(q.reshape(ps.shape[1],),ps).T.dot(dHdq(q.reshape(ps.shape[1],),ps))
 
+def FIM_mix(C1s,C0s,ks,bs,sigma=1):
+
+    """
+       The computation of Fish Information Matrix mixture, with different q for different agents.
+    """
+
+    H=partial(joint_meas_func, C1s,C0s,ks,bs)
+
+    # Taking partial derivative of H w.r.t. the zeroth argument, which is q.
+    dHdq=jit(jacfwd(H,argnums=0)) # dHdq expects (q,ps) with q being a single vector, and outputs a [len(ps) x dim(q)] Jacobian matrix. 
+
+    dHdq_mix = lambda qs,ps: jnp.ones(len(ps)).dot(dHdq(qs,ps)) 
+    # If we passed in a stack of vectors qs to dHdq, it will output a [len(ps) x shape(qs)[0] x shape(qs)[1]] Jacobian tensor, with many independent coord. taking zero values. We can reshape the matrix
+    # back as [len(ps)x dim(q)] by left-multiplying an all-one row vector
+
+    return lambda qs,ps:1/(jnp.power(sigma,2)) *  dHdq_mix(qs,ps).T.dot(dHdq_mix(qs,ps))
+
 def L(C1s,C0s,ks,bs,sigma=1):
     """
         The loss function big L. 
@@ -123,7 +140,7 @@ def dAinv(inv_A,dAdp):
     # pdb.set_trace()
     return -inv_A.dot(dAdp.transpose((2,3,0,1)).dot(inv_A)).transpose((3,0,1,2))
 
-def dLdp(C1s,C0s,ks,bs,sigma=1):
+def dLdp(C1s,C0s,ks,bs,sigma=1,FIM_func=FIM):
 
     """
         The dLdp caculation using jacfwd.
@@ -133,7 +150,7 @@ def dLdp(C1s,C0s,ks,bs,sigma=1):
     # A = FIM(q,ps,C1s,C0s,ks,bs,sigma)
     
     # Construct A(q,ps)
-    A = FIM(C1s,C0s,ks,bs,sigma)
+    A = FIM_func(C1s,C0s,ks,bs,sigma)
 
     # Construct dAdp(q,ps)
     dAdp = jit(jacfwd(A,argnums=1))
@@ -144,10 +161,8 @@ def dLdp(C1s,C0s,ks,bs,sigma=1):
     # print(np.trace(-dAinv(inv_A,dAdp),axis1=0,axis2=1)-np.array(jit(jacfwd(L,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma)))
     
     # Construct dLdP(q,ps)
-
-
-
     return lambda q,ps: -np.array(jnp.trace(dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1)) 
+
 def dSdp(C1s,C0s,ks,bs,sigma=1):
 
     """
