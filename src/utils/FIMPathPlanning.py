@@ -42,7 +42,7 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
     
     for i in range(n_timesteps):
         # Calculate the gradient
-        grad=f_dLdp(q,ps)
+        grad=f_dLdp(q=q,ps=ps)
 
         if np.any(np.isnan(grad)): # This is a hack that gets rid of degenerate gradient with random directions
                 grad = np.random.random(grad.shape)

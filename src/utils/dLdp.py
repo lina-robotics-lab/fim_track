@@ -123,6 +123,7 @@ def FIM_mix(C1s,C0s,ks,bs,sigma=1):
     dHdq=jit(jacfwd(H,argnums=0)) # dHdq expects (q,ps) with q being a single vector, and outputs a [len(ps) x dim(q)] Jacobian matrix. 
 
     dHdq_mix = lambda qs,ps: jnp.ones(len(ps)).dot(dHdq(qs,ps)) 
+   
     # If we passed in a stack of vectors qs to dHdq, it will output a [len(ps) x shape(qs)[0] x shape(qs)[1]] Jacobian tensor, with many independent coord. taking zero values. We can reshape the matrix
     # back as [len(ps)x dim(q)] by left-multiplying an all-one row vector
 
