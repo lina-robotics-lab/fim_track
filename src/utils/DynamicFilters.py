@@ -33,16 +33,16 @@ def joint_meas_func(C1s,C0s,ks,bs,x,ps):
 
 	# Casting for the compatibility of jax.numpy
 	
-	C1s=jnp.array(C1s)
-	C0s=jnp.array(C0s)
-	ks=jnp.array(ks)
-	bs=jnp.array(bs)
-	ps=jnp.array(ps)
+	C1=jnp.array(C1s)
+	C0=jnp.array(C0s)
+	k=jnp.array(ks)
+	b=jnp.array(bs)
+	p=jnp.array(ps)
 
 	# Keep in mind that x is a vector of [q,q'], thus only the first half of components are observable.    
-	dists=jnp.linalg.norm(x[:len(x)//2]-ps,axis=1)
+	dists=jnp.linalg.norm(x[:len(x)//2]-p,axis=1)
 
-	return single_meas_func(C1s,C0s,ks,bs,dists) 
+	return single_meas_func(C1,C0,k,b,dists) 
 	
 def getDynamicFilter(num_sensors,num_targets,C1s,C0s,ks,bs,initial_guess=None,filterType='ekf',xlim=(0,0),ylim=(0,0)):
 	"""
