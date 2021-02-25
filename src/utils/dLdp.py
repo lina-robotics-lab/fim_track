@@ -24,7 +24,21 @@ def analytic_dhdz(C1s,C0s,ks,bs,x,ps):
     dhdq=-(d * r_hat.T).T
     
     return np.hstack([dhdq,np.zeros(dhdq.shape)])
-    
+
+def analytic_FIM(q,ps,C1s,C0s,ks,bs):
+    rs = np.linalg.norm(ps-q,axis=1)
+    r_hat = ((ps-q).T/rs).T
+    t_hat=np.zeros(r_hat.shape)
+    t_hat[:,0]=-r_hat[:,1]
+    t_hat[:,1]=r_hat[:,0]
+
+    d = dhdr(rs,C1s,C0s,ks,bs)
+    dd = d2hdr2(rs,C1s,C0s,ks,bs)       
+
+    As = (-d*r_hat.T).T
+
+    return As.T.dot(As) # Current FIM
+
 def analytic_dLdp(q,ps,C1s,C0s,ks,bs,sigma=1):
     """
         Typically the sigma value is just a scaling on the magnitude of the gradient, so it can take a default value=1.
