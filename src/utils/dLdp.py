@@ -15,22 +15,27 @@ def dhdr(r,C1s,C0s,ks,bs):
 def d2hdr2(r,C1s,C0s,ks,bs):
     return dhdr(r,C1s,C0s,ks,bs)*(bs-1)/(r-C1s)
 
-def analytic_dhdz(C1s,C0s,ks,bs,x,ps):
-    q = x[:len(x)//2]
-    rs = np.linalg.norm(ps-q,axis=1)
+
+def analytic_dhdz(x,ps,C1s,C0s,ks,bs):
+
+    q = x.flatten()
+    q = q[:len(q)//2]
+    # print(x,q)
+    # print(ps-q)
+    # rs = np.linalg.norm(ps-q,axis=1)
+    rs = jnp.linalg.norm(ps-q,axis=1)
    
     r_hat = ((ps-q).T/rs).T
     d = dhdr(rs,C1s,C0s,ks,bs)
     dhdq=-(d * r_hat.T).T
     
-    return np.hstack([dhdq,np.zeros(dhdq.shape)])
+    return jnp.hstack([dhdq,np.zeros(dhdq.shape)])
 
 def analytic_FIM(q,ps,C1s,C0s,ks,bs):
-    rs = np.linalg.norm(ps-q,axis=1)
+    # rs = np.linalg.norm(ps-q,axis=1)
+    rs = jnp.linalg.norm(ps-q,axis=1)
     r_hat = ((ps-q).T/rs).T
-    t_hat=np.zeros(r_hat.shape)
-    t_hat[:,0]=-r_hat[:,1]
-    t_hat[:,1]=r_hat[:,0]
+
 
     d = dhdr(rs,C1s,C0s,ks,bs)
     dd = d2hdr2(rs,C1s,C0s,ks,bs)       
@@ -56,8 +61,8 @@ def analytic_dLdp(q,ps,C1s,C0s,ks,bs,sigma=1):
     wrhat=(d*r_hat.T).T
     Q = np.linalg.inv(wrhat.T.dot(wrhat)) # FIM^-1
 
-    c1 = 2*d*dd*np.linalg.norm(Q.dot(r_hat.T),axis=0)**2
-    c2 = 2*(1/rs)*(d**2)*np.einsum('ij,ij->j',Q.dot(r_hat.T),Q.dot(t_hat.T))
+    c1 = -2*d*dd*np.linalg.norm(Q.dot(r_hat.T),axis=0)**2
+    c2 = -2*(1/rs)*(d**2)*np.einsum('ij,ij->j',Q.dot(r_hat.T),Q.dot(t_hat.T))
 
     return (c1*r_hat.T+c2*t_hat.T).T
 
@@ -159,7 +164,7 @@ def dLdp(C1s,C0s,ks,bs,sigma=1,FIM_func=FIM):
     # print(np.trace(-dAinv(inv_A,dAdp),axis1=0,axis2=1)-np.array(jit(jacfwd(L,argnums=1))(q,ps,C1s,C0s,ks,bs,sigma)))
     
     # Construct dLdP(q,ps)
-    return lambda q,ps: -np.array(jnp.trace(dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1)) 
+    return lambda q,ps: np.array(jnp.trace(dAinv(inv_A(q,ps),dAdp(q,ps)),axis1=0,axis2=1)) 
 
 def dSdp(C1s,C0s,ks,bs,sigma=1):
 

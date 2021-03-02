@@ -23,6 +23,7 @@ from utils.ParticleFilterBasic import ParticleFilterBasic as PF
 Utility needed for projecting estimation back to the region of movement
 '''
 from utils.regions import Rect2D
+from utils.dLdp import analytic_dhdz
 
 
 def single_meas_func(C1,C0,k,b,dist):
@@ -55,9 +56,10 @@ def getDynamicFilter(num_sensors,num_targets,C1s,C0s,ks,bs,initial_guess=None,fi
 
 
 	meas_func=partial(joint_meas_func,C1s,C0s,ks,bs)# Freeze the coefficients, the signature becomes meas_func(x,ps)
-	return TargetTrackingSS(num_sensors,num_targets,meas_func,initial_guess=initial_guess,filterType=filterType,xlim=xlim,ylim=ylim)
+	dhdx = partial(analytic_dhdz,C1s=C1s,C0s=C0s,ks=ks,bs=bs)	
+	return TargetTrackingSS(num_sensors,num_targets,meas_func,dhdx=dhdx,initial_guess=initial_guess,filterType=filterType,xlim=xlim,ylim=ylim)
 
-
+		
 class TargetTrackingSS:
 	'''
 		The state space model for the target tracking system is the constant velocity model.
@@ -85,7 +87,7 @@ class TargetTrackingSS:
 			and meas_func takes in a num_targets x 2 vector x, and a num_sensors x 2 vector p.
 			The jacobian will be automatically calculated as dmeas_func/dx only. 
 	'''
-	def __init__(self, num_sensors,num_targets,meas_func, initial_guess=None, filterType='ekf',xlim = (0,2.4),ylim=(0,4.5)):
+	def __init__(self, num_sensors,num_targets, meas_func,dhdx=None, initial_guess=None, filterType='ekf',xlim = (0,2.4),ylim=(0,4.5)):
 			self.num_sensors=num_sensors
 			self.num_targets=num_targets
 			self.filterType=filterType
@@ -98,6 +100,9 @@ class TargetTrackingSS:
 			self.A=np.vstack([np.hstack([I,I]),np.hstack([O,I])])
 
 			self.meas_func=meas_func
+			self.dhdx = dhdx
+			if self.dhdx is None:
+				self.dhdx = jacfwd(meas_func)
 
 			self.ps=np.zeros((self.num_sensors,2))
 
@@ -138,7 +143,7 @@ class TargetTrackingSS:
 		return self.filter.x_prior
 	
 	def update_filters(self,new_ps, new_measurements):
-			print(self.filter.P)
+			
 			self.update_ps_(new_ps)
 			#self.filter.update(new_measurements,self.dhxdx,self.hx)
 			region = Rect2D(self.xlim,self.ylim)
@@ -169,7 +174,7 @@ class TargetTrackingSS:
 	
 	# Use jax to automatically compute the jacobian of measurement function, with respect to state only.
 	def dhxdx(self,x):
-		C=jacfwd(self.hx)(x)
-		return C
+		# print(x,self.ps)
+		return self.dhdx(x,self.ps)
 	
 	

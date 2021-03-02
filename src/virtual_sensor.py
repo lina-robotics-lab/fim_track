@@ -29,7 +29,7 @@ class virtual_sensor(object):
 		d=np.linalg.norm(q2p,axis=-1)
 
 
-		y = (self.k*(d-self.C1)**self.b)
+		y = (self.k*(d-self.C1)**self.b)+self.C0
 
 		# Sum over the influence of all sources to get the total measurement for each sensor.
 		y=np.sum(y,axis = 0)

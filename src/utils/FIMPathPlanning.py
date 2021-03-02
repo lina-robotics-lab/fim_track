@@ -11,7 +11,7 @@ def polar_projection(q,ps,r):
     ps_proj=((ps-q).T/dists * r).T +q
     return ps_proj
 
-def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,epsilon,region=None):
+def FIM_descent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,epsilon,region=None):
     """
         f_dLdp: a function handle, f_dLdp(q,ps)=dLdp.
         q: Current location of the target.
@@ -27,9 +27,9 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
             The update step size will be a constant = max_linear_speed * dt
         
         epsilon: when the planned trajectories end, how far away should they be to the target.
-        region: If None, unconstraint gradient ascent is performed. Otherwise, region should be
+        region: If None, unconstraint gradient descent is performed. Otherwise, region should be
         of class Region as defined in regions.py file in fim_track package, and projected gradient 
-        ascent onto the given region will be performed.
+        descent onto the given region will be performed.
         ----------------------------------------------------------------------------------------
         Output: waypoints for each mobile sensor, Shape= (num_time_steps,num_sensors,2)
     """
@@ -37,12 +37,15 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
     step_size=max_linear_speed*dt
     p_trajs=[]
     
+    # print(q)
+    # print(q.reshape(-1,2))
     q=q.reshape(-1,2)
     ps=ps.reshape(-1,2)
     
     for i in range(n_timesteps):
         # Calculate the gradient
-        grad=f_dLdp(q=q,ps=ps)
+        
+        grad=np.array(f_dLdp(q,ps))
 
         if np.any(np.isnan(grad)): # This is a hack that gets rid of degenerate gradient with random directions
                 grad = np.random.random(grad.shape)
@@ -56,7 +59,7 @@ def FIM_ascent_path_planning(f_dLdp,q,ps,n_p,n_timesteps,max_linear_speed,dt,eps
 
         update_steps=(grad.T/grad_sizes * step_size).T # Calculate the update steps to be applied to ps
 
-        candid_ps=ps+update_steps # Calculate the direct update 
+        candid_ps=ps-update_steps # Calculate the direct update 
         
         # Perform the projection onto specified constraint region, if given.
         if not region is None:
