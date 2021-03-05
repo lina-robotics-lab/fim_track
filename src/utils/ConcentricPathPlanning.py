@@ -4,8 +4,7 @@ Path Planning for concentric, equi-angular movement.
 """
 def concentric_path_planning(R,ps,n_p,n_steps,max_linear_speed,dt):
 	"""
-		It suffices to specify only the starting and ending waypoints. 
-		The spline fitting in motion generation will take care of the rest. 
+		
 	"""
 	step_size = max_linear_speed*dt
 	ps=ps.reshape(-1,2)
@@ -27,6 +26,7 @@ def concentric_path_planning(R,ps,n_p,n_steps,max_linear_speed,dt):
 	directions = np.repeat(directions,len(dists),axis=0)
 
 	waypoints = directions*dists[:,:,np.newaxis] + CoM
-	return waypoints,reached # shape = (2,n_p,space_dim=2)
+	# print(waypoints,directions)
+	return waypoints[1:] # shape = (2,n_p,space_dim=2)
     
     

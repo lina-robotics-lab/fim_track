@@ -70,4 +70,4 @@ def mutual_separation_path_planning(R,ps,n_p,n_timesteps,\
 			ps=candid_ps # Update ps.
 			
 	p_trajs = np.array(p_trajs)
-	return p_trajs,reached
+	return p_trajs
