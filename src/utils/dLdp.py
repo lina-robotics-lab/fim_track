@@ -20,17 +20,16 @@ def analytic_dhdz(x,ps,C1s,C0s,ks,bs):
 
     q = x.flatten()
     q = q[:len(q)//2]
-    # print(x,q)
-    # print(ps-q)
-    # rs = np.linalg.norm(ps-q,axis=1)
+    dhdq = analytic_dhdq(q,ps,C1s,C0s,ks,bs)
+    return jnp.hstack([dhdq,np.zeros(dhdq.shape)])
+
+def analytic_dhdq(q,ps,C1s,C0s,ks,bs):
     rs = jnp.linalg.norm(ps-q,axis=1)
    
     r_hat = ((ps-q).T/rs).T
     d = dhdr(rs,C1s,C0s,ks,bs)
     dhdq=-(d * r_hat.T).T
-    
-    return jnp.hstack([dhdq,np.zeros(dhdq.shape)])
-
+    return dhdq
 def analytic_FIM(q,ps,C1s,C0s,ks,bs):
     # rs = np.linalg.norm(ps-q,axis=1)
     rs = jnp.linalg.norm(ps-q,axis=1)
@@ -44,9 +43,12 @@ def analytic_FIM(q,ps,C1s,C0s,ks,bs):
 
     return As.T.dot(As) # Current FIM
 
-def analytic_dLdp(q,ps,C1s,C0s,ks,bs,sigma=1):
+def analytic_dLdp(q,ps,C1s,C0s,ks,bs,FIM=None):
     """
-        Typically the sigma value is just a scaling on the magnitude of the gradient, so it can take a default value=1.
+        The gradient is taken with respect to all the ps passed in. 
+
+        The FIM is by default calculated internally, but if it is passed in, will
+        use the passed in FIM for the calculation of Q below.
     """
   
     rs = np.linalg.norm(ps-q,axis=1)
@@ -59,7 +61,14 @@ def analytic_dLdp(q,ps,C1s,C0s,ks,bs,sigma=1):
     dd = d2hdr2(rs,C1s,C0s,ks,bs)
 
     wrhat=(d*r_hat.T).T
-    Q = np.linalg.inv(wrhat.T.dot(wrhat)) # FIM^-1
+
+    if FIM is None:
+        Q = np.linalg.inv(wrhat.T.dot(wrhat)) # Default calculation of FIM^-1
+    else:
+        # print('Coordinating')
+        if np.linalg.matrix_rank(FIM) < 2:
+            FIM = FIM + 1e-9*np.eye(2)
+        Q = np.linalg.inv(FIM) # Using the passed in FIM.
 
     c1 = -2*d*dd*np.linalg.norm(Q.dot(r_hat.T),axis=0)**2
     c2 = -2*(1/rs)*(d**2)*np.einsum('ij,ij->j',Q.dot(r_hat.T),Q.dot(t_hat.T))
