@@ -21,10 +21,11 @@ def analytic_dhdz(x,ps,C1s,C0s,ks,bs):
     q = x.flatten()
     q = q[:len(q)//2]
     dhdq = analytic_dhdq(q,ps,C1s,C0s,ks,bs)
-    return jnp.hstack([dhdq,np.zeros(dhdq.shape)])
-
+    # return jnp.hstack([dhdq,np.zeros(dhdq.shape)])
+    return np.hstack([dhdq,np.zeros(dhdq.shape)])
 def analytic_dhdq(q,ps,C1s,C0s,ks,bs):
-    rs = jnp.linalg.norm(ps-q,axis=1)
+    # rs = jnp.linalg.norm(ps-q,axis=1)
+    rs = np.linalg.norm(ps-q,axis=1)
    
     r_hat = ((ps-q).T/rs).T
     d = dhdr(rs,C1s,C0s,ks,bs)
