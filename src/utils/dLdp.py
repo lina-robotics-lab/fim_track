@@ -40,6 +40,7 @@ def analytic_FIM(q,ps,C1s,C0s,ks,bs):
     dd = d2hdr2(rs,C1s,C0s,ks,bs)       
 
     As = (-d*r_hat.T).T
+    print(As)
 
     return As.T.dot(As) # Current FIM
 
