@@ -33,7 +33,7 @@ def analytic_dhdq(q,ps,C1s,C0s,ks,bs):
     return dhdq
 def analytic_FIM(q,ps,C1s,C0s,ks,bs):
     # rs = np.linalg.norm(ps-q,axis=1)
-    rs = jnp.linalg.norm(ps-q,axis=1)
+    rs = np.linalg.norm(ps-q,axis=1)
     r_hat = ((ps-q).T/rs).T
 
 
@@ -41,7 +41,7 @@ def analytic_FIM(q,ps,C1s,C0s,ks,bs):
     dd = d2hdr2(rs,C1s,C0s,ks,bs)       
 
     As = (-d*r_hat.T).T
-    print(As)
+   
 
     return As.T.dot(As) # Current FIM
 
