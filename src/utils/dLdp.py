@@ -68,8 +68,8 @@ def analytic_dLdp(q,ps,C1s,C0s,ks,bs,FIM=None):
         Q = np.linalg.inv(wrhat.T.dot(wrhat)) # Default calculation of FIM^-1
     else:
         # print('Coordinating')
-        if np.linalg.matrix_rank(FIM) < 2:
-            FIM = FIM + 1e-9*np.eye(2)
+        # if np.linalg.matrix_rank(FIM) < 2:
+        #     FIM = FIM + 1e-9*np.eye(2)
         Q = np.linalg.inv(FIM) # Using the passed in FIM.
 
     c1 = -2*d*dd*np.linalg.norm(Q.dot(r_hat.T),axis=0)**2

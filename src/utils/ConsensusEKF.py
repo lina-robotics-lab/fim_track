@@ -13,7 +13,7 @@ class ConsensusEKF:
         
         The estimator assumes a constant-velocity source movement model, with the velocity to be the fundamental uncertainty.
     """
-    def __init__(self,q_0,R_mag=1,Q_mag=1,C_gain = 0.1):
+    def __init__(self,q_0,R_mag=1,Q_mag=1,C_gain = 0.0):
         '''
         q_0 should be a vector, the initial guess of source position.
         
@@ -49,7 +49,7 @@ class ConsensusEKF:
         A = self.dfdz(z)
         
         return A.dot(z)
-    def update(self,h,dhdz,y,p,z_neighbor,z_neighbor_bar=None):
+    def update(self,h,dhdz,y,p,z_neighbor,z_neighbor_bar=None,inv_d_neighbor=None):
         """
         h is a function handle h(z,p), the measurement function that maps z,p to y.
         dhdz(z,p) is its derivative function handle.
@@ -70,6 +70,8 @@ class ConsensusEKF:
 
         # Mean and covariance update
         N = len(z_neighbor)
+
+        if inv_d_neighbor is None:
         
 #         Consensus variation (5), consensus on z_hat.
 #         self._zbar= self.z+K.dot(y-h(self.z,p)) +\
@@ -85,15 +87,19 @@ class ConsensusEKF:
         
         
 #         The Stable version of consensus scheme
-        self.z = self.f(self.z)+K.dot(y-h(self.z,p)) +\
+            
+            self.z = self.f(self.z)+K.dot(y-h(self.z,p)) +\
                                 self.C_gain*np.ones((1,N)).dot(z_neighbor-self.z).flatten() # The consensus term.
-
-    
+        else:
+            # print('Two pass parallel')
+            self.z= inv_d_neighbor.dot(z_neighbor)/np.sum(inv_d_neighbor) # The consensus term.
+            self.z = self.f(self.z)+K.dot(y-h(self.z,p))    
+                              
         self.P = A.dot(self.P).dot(A.T)+ Q- K.dot(C.dot(self.P).dot(C.T)+R).dot(K.T)
         
-    def update_and_estimate_loc(self,h,dhdz,y,p,z_neighbor,z_neighbor_bar=None):
+    def update_and_estimate_loc(self,h,dhdz,y,p,z_neighbor,z_neighbor_bar=None,inv_d_neighbor=None):
         if not np.any(y == np.inf):
-            self.update(h,dhdz,y,p,z_neighbor,z_neighbor_bar)
+            self.update(h,dhdz,y,p,z_neighbor,z_neighbor_bar,inv_d_neighbor)
 
         return self.z[:len(self.q)]
 
