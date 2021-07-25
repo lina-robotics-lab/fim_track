@@ -17,14 +17,16 @@ def sep_func(ps):
 	A = ps-CoM
 	return jnp.linalg.det(A.T.dot(A))
 
-def mutual_separation_path_planning(R,ps,n_p,n_timesteps,\
+default_f_dLdp = jit(jacfwd(sep_func))
+def mutual_separation_path_planning(R,ps,n_timesteps,\
 	max_linear_speed,dt,scalar_readings,xlim = (0,2.4),ylim = (0,4.5),CoM_motion_gain=2,\
 	f_dLdp=None):
 	step_size = max_linear_speed*dt
 	ps=ps.reshape(-1,2)
 
 	if f_dLdp is None:
-		f_dLdp = jit(jacfwd(sep_func))
+		f_dLdp = default_f_dLdp
+	
 	p_trajs=[]
 	reached=False
 	for i in range(n_timesteps):
