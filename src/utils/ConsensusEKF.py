@@ -49,7 +49,7 @@ class ConsensusEKF:
         A = self.dfdz(z)
         
         return A.dot(z)
-    def update(self,h,dhdz,y,p,z_neighbor,z_neighbor_bar=None,inv_d_neighbor=None):
+    def update(self,h,dhdz,y,p,z_neighbor,z_neighbor_bar=None,consensus_weights=None):
         """
         h is a function handle h(z,p), the measurement function that maps z,p to y.
         dhdz(z,p) is its derivative function handle.
@@ -71,7 +71,7 @@ class ConsensusEKF:
         # Mean and covariance update
         N = len(z_neighbor)
 
-        if inv_d_neighbor is None:
+        if consensus_weights is None:
         
 #         Consensus variation (5), consensus on z_hat.
 #         self._zbar= self.z+K.dot(y-h(self.z,p)) +\
@@ -92,14 +92,14 @@ class ConsensusEKF:
                                 self.C_gain*np.ones((1,N)).dot(z_neighbor-self.z).flatten() # The consensus term.
         else:
             # print('Two pass parallel')
-            self.z= inv_d_neighbor.dot(z_neighbor)/np.sum(inv_d_neighbor) # The consensus term.
+            self.z= consensus_weights.dot(z_neighbor)/np.sum(consensus_weights) # The consensus term.
             self.z = self.f(self.z)+K.dot(y-h(self.z,p))    
                               
         self.P = A.dot(self.P).dot(A.T)+ Q- K.dot(C.dot(self.P).dot(C.T)+R).dot(K.T)
         
-    def update_and_estimate_loc(self,h,dhdz,y,p,z_neighbor,z_neighbor_bar=None,inv_d_neighbor=None):
+    def update_and_estimate_loc(self,h,dhdz,y,p,z_neighbor,z_neighbor_bar=None,consensus_weights=None):
         if not np.any(y == np.inf):
-            self.update(h,dhdz,y,p,z_neighbor,z_neighbor_bar,inv_d_neighbor)
+            self.update(h,dhdz,y,p,z_neighbor,z_neighbor_bar,consensus_weights)
 
         return self.z[:len(self.q)]
 

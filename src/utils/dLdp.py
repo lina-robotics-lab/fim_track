@@ -7,8 +7,6 @@ auto-differentiation.
 """
 
 import numpy as np
-from utils.MutualSepPathPlanning import sep_func
-
 
 def dhdr(r,C1s,C0s,ks,bs):
     return ks*bs*(r-C1s)**(bs-1)
