@@ -72,26 +72,16 @@ class ConsensusEKF:
         N = len(z_neighbor)
 
         if consensus_weights is None:
-        
-#         Consensus variation (5), consensus on z_hat.
-#         self._zbar= self.z+K.dot(y-h(self.z,p)) +\
-#                     self.C_gain*np.ones((1,N)).dot(z_neighbor-self.z).flatten() 
-#         self.z = self.f(self._zbar)
-
-
-#         Consensus variation (6), consensus on z_bar
-#         self._zbar= self._zbar+K.dot(y-h(self.z,p)) +\
-#                     self.C_gain*np.ones((1,N)).dot(z_neighbor_bar-self._zbar).flatten()
-#         self.z = self.f(self._zbar)
-        
-        
-        
-#         The Stable version of consensus scheme
-            
-            self.z = self.f(self.z)+K.dot(y-h(self.z,p)) +\
-                                self.C_gain*np.ones((1,N)).dot(z_neighbor-self.z).flatten() # The consensus term.
+            self.z = self.f(self.z)+K.dot(y-h(self.z,p)) # Local EKF, no consensus.
         else:
-            # print('Two pass parallel')
+            # The Stable version of consensus scheme
+            
+            # Fixed consensus gain. Not used.
+            
+            # self.z = self.f(self.z)+K.dot(y-h(self.z,p)) +\
+            #                     self.C_gain*np.ones((1,N)).dot(z_neighbor-self.z).flatten() # The consensus term.
+            
+            # 'Two pass parallel'
             self.z= consensus_weights.dot(z_neighbor)/np.sum(consensus_weights) # The consensus term.
             self.z = self.f(self.z)+K.dot(y-h(self.z,p))    
                               
